@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Soullink Tracker - Sorted & Progress</title>
+    <style>
+        body { background-color: #121212; color: #ffffff; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; }
+        h1 { color: #ffcb05; text-shadow: 2px 2px #3b4cca; margin-top: 20px; margin-bottom: 10px; }
+        
+        /* Progress Bar Container */
+        #progress-container { width: 100%; height: 4px; background: #222; position: sticky; top: 0; z-index: 100; }
+        #progress-bar { width: 100%; height: 100%; background: #ffcb05; transition: width 1s linear; }
+
+        #last-update { font-size: 0.8em; color: #666; margin: 10px 0; }
+        .flash { color: #00ff00 !important; font-weight: bold; }
+        
+        /* Dashboard auf normale Sortierung umgestellt */
+        #dashboard { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; padding: 20px; width: 100%; }
+
+        .card { 
+            background: #1e1e1e; border: 2px solid #333; border-radius: 12px; width: 280px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); overflow: hidden; 
+        }
+        .route-header { background: #333; color: #aaa; font-size: 0.7em; font-weight: bold; padding: 6px; text-align: center; text-transform: uppercase; }
+        .card-content { padding: 12px; }
+        .pair { display: flex; justify-content: space-between; align-items: center; }
+        .slot { flex: 1; text-align: center; }
+        .slot img { width: 75px; height: 75px; image-rendering: pixelated; }
+        .name { font-weight: bold; margin-top: 5px; color: #ffcb05; font-size: 0.9em; }
+        .user-tag { font-size: 0.65em; color: #888; margin-bottom: 3px; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+    <div id="progress-container"><div id="progress-bar"></div></div>
+    <h1>Soullink Live Tracker</h1>
+    <div id="last-update">Warte auf ersten Sync (60s Intervall)...</div>
+    <div id="dashboard"></div>
+
+    <script>
+        const PUB_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRRij-4ewY3aNWCBWOhSHtpk7ay3J13O76Cu88DwFddgHwTgDHUa0srm5h6sC31MGVPfC8KWbfDEFU/pub?gid=0&single=true&output=csv';
+        
+        const REFRESH_TIME = 60; // Sekunden
+        let secondsLeft = REFRESH_TIME;
+
+        async function update() {
+            const statusLabel = document.getElementById('last-update');
+            const board = document.getElementById('dashboard');
+
+            try {
+                const buster = `&t=${Date.now()}&z=${Math.random().toString(36).substr(2)}`;
+                const response = await fetch(PUB_URL + buster);
+                const csvText = await response.text();
+                
+                if (csvText.includes("<html")) return;
+
+                const rows = csvText.split(/\r?\n/).map(row => 
+                    row.split(',').map(col => col.replace(/^"|"$/g, '').trim())
+                );
+
+                const player1 = rows[0][1] || "Jan";
+                const player2 = rows[0][2] || "Borian";
+                
+                let htmlBuffer = "";
+
+                // Loop ab Zeile 1 (unter Header)
+                for (let i = 1; i < rows.length; i++) {
+                    const cols = rows[i];
+                    if (cols.length < 4) continue;
+
+                    const location = cols[0] || "Route";
+                    const p1 = cols[1];
+                    const p2 = cols[2];
+                    const status = cols[3].toUpperCase();
+
+                    if ((status === 'TRUE' || status === 'WAHR') && p1) {
+                        htmlBuffer += `
+                            <div class="card">
+                                <div class="route-header">${location}</div>
+                                <div class="card-content">
+                                    <div class="pair">
+                                        <div class="slot">
+                                            <div class="user-tag">${player1}</div>
+                                            <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${p1.toLowerCase()}.gif" onerror="this.style.visibility='hidden'">
+                                            <div class="name">${p1}</div>
+                                        </div>
+                                        <div style="color:#ff4444;">🔗</div>
+                                        <div class="slot">
+                                            <div class="user-tag">${player2}</div>
+                                            <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${p2.toLowerCase()}.gif" onerror="this.style.visibility='hidden'">
+                                            <div class="name">${p2}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>`;
+                    }
+                }
+
+                board.innerHTML = htmlBuffer; // Dashboard komplett neu zeichnen für korrekte Sortierung
+                statusLabel.innerText = `Letzter Sync: ${new Date().toLocaleTimeString()} | ${player1} & ${player2}`;
+                statusLabel.classList.add('flash');
+                setTimeout(() => statusLabel.classList.remove('flash'), 800);
+                
+                secondsLeft = REFRESH_TIME; // Timer zurücksetzen
+
+            } catch (e) {
+                console.warn("Sync fehlgeschlagen, probiere es gleich erneut.");
+            }
+        }
+
+        // Timer-Logik für die Progress Bar
+        setInterval(() => {
+            secondsLeft--;
+            const percent = (secondsLeft / REFRESH_TIME) * 100;
+            document.getElementById('progress-bar').style.width = percent + "%";
+
+            if (secondsLeft <= 0) {
+                update();
+            }
+        }, 1000);
+
+        // Erster Start
+        update();
+    </script>
+</body>
+</html>
