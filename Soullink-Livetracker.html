@@ -156,32 +156,29 @@
             const board = document.getElementById('dashboard');
 
             try {
-                // Cache-Busting: Timestamp & Random String
-                const buster = `&nocache=${Date.now()}&z=${Math.random().toString(36).substr(2, 5)}`;
+                // EXTREMES Cache-Busting: Wir hängen einen Zeitstempel und eine Zufallszahl an
+                const buster = `&cachebuster=${Date.now()}${Math.random().toString(36).substring(7)}`;
                 const response = await fetch(PUB_URL + buster);
                 
-                if (!response.ok) throw new Error("Netzwerk-Antwort war nicht ok");
+                if (!response.ok) throw new Error("HTTP Fehler " + response.status);
 
                 const csvText = await response.text();
                 
-                // HTML-Check (falls Google eine Login-Seite schickt)
-                if (csvText.includes("<html") || csvText.length < 20) {
-                    console.warn("Ungültige Daten empfangen");
-                    return;
-                }
-
+                // Debugging: Zeige in der F12-Konsole, wie viele Zeilen Google schickt
                 const rows = csvText.split(/\r?\n/).map(row => 
                     row.split(',').map(col => col.replace(/^"|"$/g, '').trim())
                 );
+                console.log("Daten-Update erhalten. Zeilenanzahl:", rows.length);
 
-                if (rows.length < 1) return;
+                if (rows.length < 1 || csvText.includes("<html")) {
+                    console.warn("Google liefert noch keine validen CSV-Daten.");
+                    return;
+                }
 
-                // Spielernamen aus Header (B1 & C1)
                 const player1 = rows[0][1] || "Spieler 1";
                 const player2 = rows[0][2] || "Spieler 2";
                 
                 let htmlBuffer = "";
-                const uniqueCheck = new Set(); 
 
                 for (let i = 1; i < rows.length; i++) {
                     const cols = rows[i];
@@ -192,52 +189,51 @@
                     const p2 = cols[2];
                     const status = cols[3]?.toUpperCase();
 
-                    // Nur aktive Zeilen anzeigen, Starter/Platzhalter ignorieren
+                    // Prüfe auf TRUE oder WAHR (Google übersetzt das oft lokal)
                     if ((status === 'TRUE' || status === 'WAHR') && p1 && p1.toLowerCase() !== "starter") {
-                        
-                        // Eindeutige ID für diese Zeile (gegen Cache-Artefakte)
-                        const rowId = `${location}-${p1}-${p2}`.toLowerCase();
-                        
-                        if (!uniqueCheck.has(rowId)) {
-                            uniqueCheck.add(rowId);
-                            
-                            htmlBuffer += `
-                                <div class="card">
-                                    <div class="route-header">${location}</div>
-                                    <div class="card-content">
-                                        <div class="pair">
-                                            <div class="slot">
-                                                <div class="user-tag">${player1}</div>
-                                                <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${p1.toLowerCase().replace('.','').replace(' ','-')}.gif" onerror="this.style.visibility='hidden'">
-                                                <div class="name">${p1}</div>
-                                            </div>
-                                            <div class="link-icon">🔗</div>
-                                            <div class="slot">
-                                                <div class="user-tag">${player2}</div>
-                                                <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${p2.toLowerCase().replace('.','').replace(' ','-')}.gif" onerror="this.style.visibility='hidden'">
-                                                <div class="name">${p2}</div>
-                                            </div>
+                        htmlBuffer += `
+                            <div class="card">
+                                <div class="route-header">${location}</div>
+                                <div class="card-content">
+                                    <div class="pair">
+                                        <div class="slot">
+                                            <div class="user-tag">${player1}</div>
+                                            <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${p1.toLowerCase().replace('.','').replace(' ','-')}.gif" onerror="this.style.visibility='hidden'">
+                                            <div class="name">${p1}</div>
+                                        </div>
+                                        <div class="link-icon">🔗</div>
+                                        <div class="slot">
+                                            <div class="user-tag">${player2}</div>
+                                            <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${p2.toLowerCase().replace('.','').replace(' ','-')}.gif" onerror="this.style.visibility='hidden'">
+                                            <div class="name">${p2}</div>
                                         </div>
                                     </div>
-                                </div>`;
-                        }
+                                </div>
+                            </div>`;
                     }
                 }
 
-                board.innerHTML = htmlBuffer || "<p class='empty-msg'>Keine aktiven Paare gefunden. Markiere 'WAHR' in deinem Sheet!</p>";
-                
-                // Zeitstempel-Update
-                statusLabel.innerText = `Letzter Sync: ${new Date().toLocaleTimeString()} | ${player1} & ${player2}`;
+                board.innerHTML = htmlBuffer || "<p class='empty-msg'>Keine aktiven Paare gefunden.</p>";
+                statusLabel.innerText = `Update: ${new Date().toLocaleTimeString()} | ${player1} & ${player2}`;
                 statusLabel.classList.add('update-flash');
                 setTimeout(() => statusLabel.classList.remove('update-flash'), 1000);
                 
                 secondsLeft = REFRESH_SECONDS; 
 
             } catch (e) {
-                console.error("Fehler beim Abrufen:", e);
-                statusLabel.innerText = "Verbindung unterbrochen - versuche es erneut...";
+                console.error("Fetch-Error:", e);
+                statusLabel.innerText = "Sync-Hänger... Google wird abgefragt.";
             }
         }
+
+        setInterval(() => {
+            secondsLeft--;
+            const bar = document.getElementById('progress-bar');
+            if (bar) bar.style.width = (Math.max(0, secondsLeft) / REFRESH_SECONDS * 100) + "%";
+            if (secondsLeft <= 0) update();
+        }, 1000);
+
+        update();
 
         // Timer-Loop (1 Sekunde)
         setInterval(() => {
