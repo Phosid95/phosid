@@ -28,7 +28,7 @@
         #last-update { font-size: 0.85em; color: #888; margin-bottom: 20px; }
         .update-flash { color: #00ff00 !important; font-weight: bold; }
 
-        /* Dashboard */
+        /* Dashboard Layout */
         #dashboard { display: flex; flex-wrap: wrap; justify-content: center; gap: 25px; padding: 20px; max-width: 95%; }
 
         .card { 
@@ -46,7 +46,7 @@
         .card-content { padding: 15px; }
         .pair { display: flex; justify-content: center; align-items: center; gap: 10px; }
         .slot { flex: 1; text-align: center; min-width: 100px; }
-        .slot img { width: 80px; height: 80px; image-rendering: pixelated; margin-bottom: 5px; }
+        .slot img { width: 80px; height: 80px; image-rendering: auto; margin-bottom: 5px; object-fit: contain; }
         .name { font-weight: bold; color: #ffcb05; font-size: 0.9em; }
         .user-tag { font-size: 0.6em; color: #aaa; text-transform: uppercase; margin-bottom: 5px; }
         .link-icon { font-size: 1.2em; color: #ff4444; }
@@ -56,41 +56,61 @@
 <body>
 
     <div id="progress-container"><div id="progress-bar"></div></div>
-    <h1>Soullink Tracker</h1>
+    <h1>Soullink Live Tracker</h1>
     <div id="last-update">Initialisiere Daten...</div>
     <div id="dashboard"></div>
 
     <script>
         // --- KONFIGURATION ---
         const API_URL = 'https://script.google.com/macros/s/AKfycbxSB2hu6jWcDEDP0onx8IqBAdY49URenMbM8UdN7El921Lg6fQeq1pP86Y9r-yG5D-O/exec'; 
-        const REFRESH_SECONDS = 5;
+        const REFRESH_SECONDS = 10;
+        
+        const MISSING_NO_URL = "https://www.pngkey.com/png/full/343-3434526_missingno-missingno-sprite.png";
         
         let pokemonMap = {}; 
         let secondsLeft = REFRESH_SECONDS;
 
-        // 1. LADE ÜBERSETZUNGEN (VON GITHUB)
+        function superClean(str) {
+            return String(str).toLowerCase().replace(/[\s\t\n\r]/g, '').trim();
+        }
+
         async function loadTranslations() {
             try {
-                // Roh-URL nutzen, um Cross-Origin Probleme zu vermeiden
                 const response = await fetch('pokemon.json?v=' + Date.now());
                 if (!response.ok) throw new Error("JSON konnte nicht geladen werden");
-                
                 const data = await response.json();
-                
-                // ANPASSUNG: Da deine JSON ein Objekt "pokemon" enthält
-                if (data.pokemon) {
-                    pokemonMap = data.pokemon;
-                    console.log("Übersetzungstabelle geladen (Ebene: pokemon).");
-                } else {
-                    pokemonMap = data;
-                    console.log("Übersetzungstabelle geladen (Ebene: Root).");
+                let rawMap = data.pokemon ? data.pokemon : data;
+
+                pokemonMap = {};
+                for (let key in rawMap) {
+                    pokemonMap[superClean(key)] = rawMap[key];
                 }
+                console.log("Übersetzungstabelle geladen.");
             } catch (e) {
                 console.error("Übersetzungs-Fehler:", e);
             }
         }
 
-        // 2. HAUPTFUNKTION: DATEN AUS GOOGLE HOLEN
+        // Diese Funktion regelt den Bild-Wechsel bei Fehlern
+        function handleImgError(imgElement, enName) {
+            // Wenn das GIF (Black-White) fehlschlägt, versuche das PNG (Scarlet-Violet)
+            if (imgElement.src.includes('black-white')) {
+                console.log("GIF nicht gefunden, wechsle zu PNG für: " + enName);
+                imgElement.src = `https://img.pokemondb.net/sprites/scarlet-violet/normal/${enName}.png`;
+            } 
+			else if (imgElement.src.includes('scarlet-violet')) {
+                console.log("PNG auch nicht gefunden, lade X&Y");
+                imgElement.src = `https://img.pokemondb.net/sprites/x-y/normal/${enName}.png`;
+                imgElement.onerror = null;
+            }
+            // Wenn auch das PNG fehlschlägt, lade MissingNo
+            else {
+                console.log("PNG auch nicht gefunden, lade MissingNo.");
+                imgElement.src = MISSING_NO_URL;
+                imgElement.onerror = null; // Verhindert Endlosschleife
+            }
+        }
+
         async function update() {
             const statusLabel = document.getElementById('last-update');
             const board = document.getElementById('dashboard');
@@ -123,26 +143,25 @@
                         for (let pIdx = 0; pIdx < playerNames.length; pIdx++) {
                             const pName = playerNames[pIdx];
                             const deNameRaw = String(row[pIdx + 1]).trim();
-                            const deNameLower = deNameRaw.toLowerCase();
+                            const deNameClean = superClean(deNameRaw);
                             
-                            // Übersetzung suchen (jetzt korrekt in der Unterebene)
-                            let enName = pokemonMap[deNameLower];
-                            
-                            if (!enName) {
-                                console.warn("Übersetzung fehlt für: " + deNameLower);
-                                enName = deNameLower;
-                            }
+                            let enName = pokemonMap[deNameClean] || deNameClean;
 
-                            const imgName = enName.toLowerCase().trim()
+                            // Namen für URL säubern
+                            const imgName = String(enName).toLowerCase().trim()
                                             .replace(/\s+/g, '-')
                                             .replace(/\./g, '')
                                             .replace('♀', '-f')
                                             .replace('♂', '-m');
 
+                            // Start mit dem animierten GIF
+                            const startUrl = `https://img.pokemondb.net/sprites/black-white/anim/normal/${imgName}.gif`;
+
                             playerSlotsHtml += `
                                 <div class="slot">
                                     <div class="user-tag">${pName}</div>
-                                    <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${imgName}.gif" onerror="this.style.visibility='hidden'">
+                                    <img src="${startUrl}" 
+                                         onerror="handleImgError(this, '${imgName}')">
                                     <div class="name">${deNameRaw}</div>
                                 </div>
                                 ${pIdx < playerNames.length - 1 ? '<div class="link-icon">🔗</div>' : ''}
@@ -166,7 +185,7 @@
                 secondsLeft = REFRESH_SECONDS; 
             } catch (e) {
                 console.error("Update Fehler:", e);
-                statusLabel.innerText = "API-Verbindungsfehler...";
+                statusLabel.innerText = "Verbindung unterbrochen...";
             }
         }
 
@@ -187,5 +206,3 @@
     </script>
 </body>
 </html>
-
-
