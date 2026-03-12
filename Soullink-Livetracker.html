@@ -3,152 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pokémon Soullink Live-Tracker</title>
+    <title>Soullink Echtzeit-Tracker</title>
     <style>
-        body { 
-            background-color: #121212; 
-            color: #ffffff; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            margin: 0; 
-            overflow-x: hidden;
-        }
-
-        /* Progress Bar oben */
-        #progress-container { 
-            width: 100%; 
-            height: 5px; 
-            background: #222; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            z-index: 1000; 
-        }
-        #progress-bar { 
-            width: 100%; 
-            height: 100%; 
-            background: #ffcb05; 
-            box-shadow: 0 0 10px #ffcb05;
-            transition: width 1s linear; 
-        }
-
-        h1 { 
-            color: #ffcb05; 
-            text-shadow: 3px 3px #3b4cca; 
-            margin-top: 30px; 
-            margin-bottom: 5px; 
-            font-size: 2.5em;
-        }
-
-        #last-update { 
-            font-size: 0.85em; 
-            color: #888; 
-            margin-bottom: 20px; 
-            transition: color 0.3s ease;
-        }
-
-        .update-flash { 
-            color: #00ff00 !important; 
-            font-weight: bold; 
-        }
-
-        /* Dashboard: Karten von links nach rechts, oben nach unten */
-        #dashboard { 
-            display: flex; 
-            flex-wrap: wrap; 
-            justify-content: center; 
-            gap: 20px; 
-            padding: 20px; 
-            max-width: 1400px;
-        }
-
-        /* Karten-Design */
-        .card { 
-            background: #1e1e1e; 
-            border: 2px solid #333; 
-            border-radius: 15px; 
-            width: 280px; 
-            box-shadow: 0 8px 16px rgba(0,0,0,0.6); 
-            overflow: hidden; 
-            transition: transform 0.2s ease;
-        }
-        .card:hover { transform: translateY(-5px); }
-
-        .route-header { 
-            background: #333; 
-            color: #ddd; 
-            font-size: 0.75em; 
-            font-weight: bold; 
-            padding: 8px; 
-            text-align: center; 
-            text-transform: uppercase; 
-            letter-spacing: 1px;
-            border-bottom: 1px solid #444;
-        }
-
+        body { background-color: #121212; color: #ffffff; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; }
+        #progress-container { width: 100%; height: 5px; background: #222; position: fixed; top: 0; z-index: 1000; }
+        #progress-bar { width: 100%; height: 100%; background: #ffcb05; box-shadow: 0 0 10px #ffcb05; transition: width 1s linear; }
+        h1 { color: #ffcb05; text-shadow: 3px 3px #3b4cca; margin-top: 30px; font-size: 2.5em; }
+        #last-update { font-size: 0.85em; color: #888; margin-bottom: 20px; }
+        #dashboard { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; padding: 20px; max-width: 1400px; }
+        .card { background: #1e1e1e; border: 2px solid #333; border-radius: 15px; width: 280px; box-shadow: 0 8px 16px rgba(0,0,0,0.6); overflow: hidden; }
+        .route-header { background: #333; color: #ddd; font-size: 0.75em; font-weight: bold; padding: 8px; text-align: center; text-transform: uppercase; border-bottom: 1px solid #444; }
         .card-content { padding: 15px; }
-
-        .pair { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-
-        .slot { 
-            flex: 1; 
-            text-align: center; 
-        }
-
-        .slot img { 
-            width: 80px; 
-            height: 80px; 
-            image-rendering: pixelated; 
-            margin-bottom: 5px;
-        }
-
-        .name { 
-            font-weight: bold; 
-            color: #ffcb05; 
-            font-size: 0.95em; 
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .user-tag { 
-            font-size: 0.65em; 
-            color: #aaa; 
-            text-transform: uppercase; 
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-        }
-
-        .link-icon { 
-            font-size: 1.5em; 
-            color: #ff4444; 
-            padding: 0 10px;
-            filter: drop-shadow(0 0 5px rgba(255, 68, 68, 0.3));
-        }
-
-        p.empty-msg { color: #666; margin-top: 50px; font-style: italic; }
+        .pair { display: flex; justify-content: space-between; align-items: center; }
+        .slot { flex: 1; text-align: center; }
+        .slot img { width: 80px; height: 80px; image-rendering: pixelated; margin-bottom: 5px; }
+        .name { font-weight: bold; color: #ffcb05; font-size: 0.95em; }
+        .user-tag { font-size: 0.65em; color: #aaa; text-transform: uppercase; margin-bottom: 5px; }
+        .link-icon { font-size: 1.5em; color: #ff4444; }
+        .update-flash { color: #00ff00 !important; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="progress-container"><div id="progress-bar"></div></div>
-    
-    <h1>Soullink Tracker</h1>
-    <div id="last-update">Initialisiere Daten-Verbindung...</div>
-    
-    <div id="dashboard">
-        </div>
+    <h1>Soullink Live Tracker</h1>
+    <div id="last-update">Verbinde mit Google API...</div>
+    <div id="dashboard"></div>
 
     <script>
-        const PUB_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRRij-4ewY3aNWCBWOhSHtpk7ay3J13O76Cu88DwFddgHwTgDHUa0srm5h6sC31MGVPfC8KWbfDEFU/pub?gid=0&single=true&output=csv';
+        // HIER DEINE WEB-APP URL AUS GOOGLE APPS SCRIPT EINFÜGEN
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxSB2hu6jWcDEDP0onx8IqBAdY49URenMbM8UdN7El921Lg6fQeq1pP86Y9r-yG5D-O/exec';
         
-        const REFRESH_SECONDS = 60; 
+        const REFRESH_SECONDS = 30; 
         let secondsLeft = REFRESH_SECONDS;
 
         async function update() {
@@ -156,41 +42,26 @@
             const board = document.getElementById('dashboard');
 
             try {
-                // EXTREMES Cache-Busting: Wir hängen einen Zeitstempel und eine Zufallszahl an
-                const buster = `&cachebuster=${Date.now()}${Math.random().toString(36).substring(7)}`;
-                const response = await fetch(PUB_URL + buster);
-                
-                if (!response.ok) throw new Error("HTTP Fehler " + response.status);
+                // Keine Cache-Buster mehr nötig, da wir direkt die API aufrufen
+                const response = await fetch(API_URL);
+                const data = await response.json(); // Wir bekommen ein 2 dimensionales Array [[R1,C1,C2...], [R2,C1...]]
 
-                const csvText = await response.text();
-                
-                // Debugging: Zeige in der F12-Konsole, wie viele Zeilen Google schickt
-                const rows = csvText.split(/\r?\n/).map(row => 
-                    row.split(',').map(col => col.replace(/^"|"$/g, '').trim())
-                );
-                console.log("Daten-Update erhalten. Zeilenanzahl:", rows.length);
+                if (!data || data.length < 1) return;
 
-                if (rows.length < 1 || csvText.includes("<html")) {
-                    console.warn("Google liefert noch keine validen CSV-Daten.");
-                    return;
-                }
-
-                const player1 = rows[0][1] || "Spieler 1";
-                const player2 = rows[0][2] || "Spieler 2";
+                const player1 = data[0][1] || "Jan";
+                const player2 = data[0][2] || "Tom";
                 
                 let htmlBuffer = "";
 
-                for (let i = 1; i < rows.length; i++) {
-                    const cols = rows[i];
-                    if (cols.length < 4) continue;
-
-                    const location = cols[0] || "Route";
+                for (let i = 1; i < data.length; i++) {
+                    const cols = data[i];
+                    const location = cols[0];
                     const p1 = cols[1];
                     const p2 = cols[2];
-                    const status = cols[3]?.toUpperCase();
+                    const status = cols[3];
 
-                    // Prüfe auf TRUE oder WAHR (Google übersetzt das oft lokal)
-                    if ((status === 'TRUE' || status === 'WAHR') && p1 && p1.toLowerCase() !== "starter") {
+                    // Checkboxen in Google Apps Script kommen als echte Booleans (true/false) an
+                    if ((status === true || status === "TRUE") && p1 && p1.toLowerCase() !== "starter") {
                         htmlBuffer += `
                             <div class="card">
                                 <div class="route-header">${location}</div>
@@ -213,43 +84,25 @@
                     }
                 }
 
-                board.innerHTML = htmlBuffer || "<p class='empty-msg'>Keine aktiven Paare gefunden.</p>";
-                statusLabel.innerText = `Update: ${new Date().toLocaleTimeString()} | ${player1} & ${player2}`;
+                board.innerHTML = htmlBuffer || "<p>Keine aktiven Paare.</p>";
+                statusLabel.innerText = `Echtzeit-Sync: ${new Date().toLocaleTimeString()} | ${player1} & ${player2}`;
                 statusLabel.classList.add('update-flash');
                 setTimeout(() => statusLabel.classList.remove('update-flash'), 1000);
                 
                 secondsLeft = REFRESH_SECONDS; 
 
             } catch (e) {
-                console.error("Fetch-Error:", e);
-                statusLabel.innerText = "Sync-Hänger... Google wird abgefragt.";
+                console.error("API Fehler:", e);
+                statusLabel.innerText = "API-Fehler - Prüfe die Web-App URL!";
             }
         }
 
         setInterval(() => {
             secondsLeft--;
-            const bar = document.getElementById('progress-bar');
-            if (bar) bar.style.width = (Math.max(0, secondsLeft) / REFRESH_SECONDS * 100) + "%";
+            document.getElementById('progress-bar').style.width = (secondsLeft / REFRESH_SECONDS * 100) + "%";
             if (secondsLeft <= 0) update();
         }, 1000);
 
-        update();
-
-        // Timer-Loop (1 Sekunde)
-        setInterval(() => {
-            secondsLeft--;
-            if (secondsLeft < 0) secondsLeft = 0;
-
-            const percent = (secondsLeft / REFRESH_SECONDS) * 100;
-            const bar = document.getElementById('progress-bar');
-            if (bar) bar.style.width = percent + "%";
-
-            if (secondsLeft === 0) {
-                update();
-            }
-        }, 1000);
-
-        // Sofortiger Start beim Laden
         update();
     </script>
 </body>
