@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soullink Live-Tracker (Echtzeit)</title>
+    <title>Soullink Live-Tracker Pro</title>
     <style>
         body { 
             background-color: #121212; 
@@ -16,139 +16,72 @@
             overflow-x: hidden;
         }
 
-        /* Progress Bar oben */
+        /* Progress Bar */
         #progress-container { 
-            width: 100%; 
-            height: 5px; 
-            background: #222; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            z-index: 1000; 
+            width: 100%; height: 5px; background: #222; position: fixed; top: 0; left: 0; z-index: 1000; 
         }
         #progress-bar { 
-            width: 100%; 
-            height: 100%; 
-            background: #ffcb05; 
-            box-shadow: 0 0 10px #ffcb05;
-            transition: width 1s linear; 
+            width: 100%; height: 100%; background: #ffcb05; box-shadow: 0 0 10px #ffcb05; transition: width 1s linear; 
         }
 
-        h1 { 
-            color: #ffcb05; 
-            text-shadow: 3px 3px #3b4cca; 
-            margin-top: 40px; 
-            margin-bottom: 5px; 
-            font-size: 2.5em;
-        }
+        h1 { color: #ffcb05; text-shadow: 3px 3px #3b4cca; margin-top: 40px; margin-bottom: 5px; font-size: 2.5em; }
+        #last-update { font-size: 0.85em; color: #888; margin-bottom: 20px; }
+        .update-flash { color: #00ff00 !important; font-weight: bold; }
 
-        #last-update { 
-            font-size: 0.85em; 
-            color: #888; 
-            margin-bottom: 20px; 
-        }
+        /* Dashboard */
+        #dashboard { display: flex; flex-wrap: wrap; justify-content: center; gap: 25px; padding: 20px; max-width: 95%; }
 
-        .update-flash { 
-            color: #00ff00 !important; 
-            font-weight: bold; 
-        }
-
-        /* Dashboard: Karten-Layout */
-        #dashboard { 
-            display: flex; 
-            flex-wrap: wrap; 
-            justify-content: center; 
-            gap: 25px; 
-            padding: 20px; 
-            max-width: 95%;
-        }
-
-        /* Karten-Design (Breite jetzt variabel durch JS) */
         .card { 
-            background: #1e1e1e; 
-            border: 2px solid #333; 
-            border-radius: 15px; 
-            box-shadow: 0 8px 16px rgba(0,0,0,0.6); 
-            overflow: hidden; 
-            transition: transform 0.2s ease;
-            min-width: 280px;
+            background: #1e1e1e; border: 2px solid #333; border-radius: 15px; 
+            box-shadow: 0 8px 16px rgba(0,0,0,0.6); overflow: hidden; 
+            transition: transform 0.2s ease; min-width: 280px;
         }
         .card:hover { transform: translateY(-5px); }
 
         .route-header { 
-            background: #333; 
-            color: #ddd; 
-            font-size: 0.75em; 
-            font-weight: bold; 
-            padding: 10px; 
-            text-align: center; 
-            text-transform: uppercase; 
-            letter-spacing: 1px;
-            border-bottom: 1px solid #444;
+            background: #333; color: #ddd; font-size: 0.75em; font-weight: bold; padding: 10px; 
+            text-align: center; text-transform: uppercase; border-bottom: 1px solid #444;
         }
 
         .card-content { padding: 15px; }
-
-        .pair { 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            gap: 10px;
-        }
-
-        .slot { 
-            flex: 1; 
-            text-align: center; 
-            min-width: 100px;
-        }
-
-        .slot img { 
-            width: 80px; 
-            height: 80px; 
-            image-rendering: pixelated; 
-            margin-bottom: 5px;
-        }
-
-        .name { 
-            font-weight: bold; 
-            color: #ffcb05; 
-            font-size: 0.9em; 
-        }
-
-        .user-tag { 
-            font-size: 0.6em; 
-            color: #aaa; 
-            text-transform: uppercase; 
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-        }
-
-        .link-icon { 
-            font-size: 1.2em; 
-            color: #ff4444; 
-            font-weight: bold;
-        }
-
+        .pair { display: flex; justify-content: center; align-items: center; gap: 10px; }
+        .slot { flex: 1; text-align: center; min-width: 100px; }
+        .slot img { width: 80px; height: 80px; image-rendering: pixelated; margin-bottom: 5px; }
+        .name { font-weight: bold; color: #ffcb05; font-size: 0.9em; }
+        .user-tag { font-size: 0.6em; color: #aaa; text-transform: uppercase; margin-bottom: 5px; }
+        .link-icon { font-size: 1.2em; color: #ff4444; }
         .empty-msg { color: #555; margin-top: 50px; font-style: italic; }
     </style>
 </head>
 <body>
 
     <div id="progress-container"><div id="progress-bar"></div></div>
-    
     <h1>Soullink Live Tracker</h1>
-    <div id="last-update">Verbinde mit Google Apps Script API...</div>
-    
-    <div id="dashboard">
-        </div>
+    <div id="last-update">Initialisiere Übersetzung & API...</div>
+    <div id="dashboard"></div>
 
     <script>
-        // DEINE WEB-APP URL HIER EINFÜGEN
+        // --- KONFIGURATION ---
         const API_URL = 'https://script.google.com/macros/s/AKfycbxSB2hu6jWcDEDP0onx8IqBAdY49URenMbM8UdN7El921Lg6fQeq1pP86Y9r-yG5D-O/exec'; 
+        const REFRESH_SECONDS = 10;
         
-        const REFRESH_SECONDS = 30; // 30 Sekunden sind bei der API kein Problem
+        let pokemonMap = {}; // Hier landen die Daten aus deiner pokemon.json
         let secondsLeft = REFRESH_SECONDS;
 
+        // 1. LADE ÜBERSETZUNGEN (VON GITHUB)
+        async function loadTranslations() {
+            try {
+                const response = await fetch('pokemon.json');
+                if (!response.ok) throw new Error("JSON konnte nicht geladen werden");
+                pokemonMap = await response.json();
+                console.log("Übersetzungstabelle geladen.");
+            } catch (e) {
+                console.error("Übersetzungs-Fehler:", e);
+                // Wenn die Datei fehlt, arbeitet das Script mit den Namen aus dem Sheet weiter
+            }
+        }
+
+        // 2. HAUPTFUNKTION: DATEN AUS GOOGLE HOLEN
         async function update() {
             const statusLabel = document.getElementById('last-update');
             const board = document.getElementById('dashboard');
@@ -156,18 +89,16 @@
             try {
                 const response = await fetch(API_URL);
                 const data = await response.json(); 
-
                 if (!data || data.length < 1) return;
 
                 const headerRow = data[0];
                 
-                // 1. Finde heraus, wo "Gültig?" steht
+                // Spalte "Gültig?" finden
                 const statusColIdx = headerRow.findIndex(cell => 
-                    String(cell).trim().toUpperCase() === "GÜLTIG?" || 
-                    String(cell).trim().toUpperCase() === "GÜLTIG"
+                    String(cell).trim().toUpperCase().startsWith("GÜLTIG")
                 );
 
-                // 2. Spieler-Namen sammeln (alles zwischen Spalte 1 und der Gültig-Spalte)
+                // Spieler-Namen sammeln
                 const playerNames = [];
                 for (let col = 1; col < statusColIdx; col++) {
                     if (headerRow[col]) playerNames.push(headerRow[col]);
@@ -175,30 +106,32 @@
                 
                 let htmlBuffer = "";
 
-                // 3. Datenzeilen iterieren
                 for (let i = 1; i < data.length; i++) {
                     const row = data[i];
                     const status = row[statusColIdx];
-
-                    // Debug-Check: Ist der Status wahr?
                     const isTrue = (status === true || String(status).toUpperCase() === 'TRUE' || String(status).toUpperCase() === 'WAHR');
                     
                     if (isTrue && row[1] && String(row[1]).toLowerCase() !== "starter") {
-                        
                         let playerSlotsHtml = "";
+                        
                         for (let pIdx = 0; pIdx < playerNames.length; pIdx++) {
                             const pName = playerNames[pIdx];
-                            const pokemonName = row[pIdx + 1] || "?";
+                            const deNameRaw = String(row[pIdx + 1]).trim();
+                            const deNameLower = deNameRaw.toLowerCase();
                             
-                            const imgName = String(pokemonName).toLowerCase().trim()
-                                            .replace('.', '').replace(' ', '-')
-                                            .replace('♀', '-f').replace('♂', '-m');
+                            // Übersetzung nutzen, falls vorhanden
+                            const enName = pokemonMap[deNameLower] || deNameLower;
+
+                            // Namen für Bild-URL aufbereiten
+                            const imgName = enName
+                                .replace('.', '').replace(' ', '-')
+                                .replace('♀', '-f').replace('♂', '-m');
 
                             playerSlotsHtml += `
                                 <div class="slot">
                                     <div class="user-tag">${pName}</div>
                                     <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${imgName}.gif" onerror="this.style.visibility='hidden'">
-                                    <div class="name">${pokemonName}</div>
+                                    <div class="name">${deNameRaw}</div>
                                 </div>
                                 ${pIdx < playerNames.length - 1 ? '<div class="link-icon">🔗</div>' : ''}
                             `;
@@ -213,30 +146,33 @@
                     }
                 }
 
-                board.innerHTML = htmlBuffer || "<p class='empty-msg'>Keine aktiven Paare gefunden (Checke die Häkchen im Sheet!).</p>";
+                board.innerHTML = htmlBuffer || "<p class='empty-msg'>Keine aktiven Paare gefunden.</p>";
                 statusLabel.innerText = `Echtzeit-Sync: ${new Date().toLocaleTimeString()} | Spieler: ${playerNames.join(' & ')}`;
                 statusLabel.classList.add('update-flash');
                 setTimeout(() => statusLabel.classList.remove('update-flash'), 1000);
                 
                 secondsLeft = REFRESH_SECONDS; 
-
             } catch (e) {
-                console.error("Fehler:", e);
-                statusLabel.innerText = "API-Fehler - Bitte URL oder Spalte 'Gültig?' prüfen";
+                console.error("Update Fehler:", e);
+                statusLabel.innerText = "API-Verbindungsfehler...";
             }
         }
 
-        // Timer-Schleife
-        setInterval(() => {
-            secondsLeft--;
-            if (secondsLeft < 0) secondsLeft = 0;
-            const bar = document.getElementById('progress-bar');
-            if (bar) bar.style.width = (secondsLeft / REFRESH_SECONDS * 100) + "%";
-            if (secondsLeft === 0) update();
-        }, 1000);
+        // 3. INITIALISIERUNG
+        async function init() {
+            await loadTranslations(); // Erst Wörterbuch laden
+            update();                 // Dann erste Daten holen
+            
+            // Timer starten
+            setInterval(() => {
+                secondsLeft--;
+                if (secondsLeft < 0) secondsLeft = 0;
+                document.getElementById('progress-bar').style.width = (secondsLeft / REFRESH_SECONDS * 100) + "%";
+                if (secondsLeft === 0) update();
+            }, 1000);
+        }
 
-        // Erster Aufruf
-        update();
+        init();
     </script>
 </body>
 </html>
