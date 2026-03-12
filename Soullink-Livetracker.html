@@ -2,68 +2,187 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Soullink Tracker - Sorted & Progress</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Soullink Live-Tracker</title>
     <style>
-        body { background-color: #121212; color: #ffffff; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; }
-        h1 { color: #ffcb05; text-shadow: 2px 2px #3b4cca; margin-top: 20px; margin-bottom: 10px; }
-        
-        /* Progress Bar Container */
-        #progress-container { width: 100%; height: 4px; background: #222; position: sticky; top: 0; z-index: 100; }
-        #progress-bar { width: 100%; height: 100%; background: #ffcb05; transition: width 1s linear; }
-
-        #last-update { font-size: 0.8em; color: #666; margin: 10px 0; }
-        .flash { color: #00ff00 !important; font-weight: bold; }
-        
-        /* Dashboard auf normale Sortierung umgestellt */
-        #dashboard { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; padding: 20px; width: 100%; }
-
-        .card { 
-            background: #1e1e1e; border: 2px solid #333; border-radius: 12px; width: 280px; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5); overflow: hidden; 
+        body { 
+            background-color: #121212; 
+            color: #ffffff; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            margin: 0; 
+            overflow-x: hidden;
         }
-        .route-header { background: #333; color: #aaa; font-size: 0.7em; font-weight: bold; padding: 6px; text-align: center; text-transform: uppercase; }
-        .card-content { padding: 12px; }
-        .pair { display: flex; justify-content: space-between; align-items: center; }
-        .slot { flex: 1; text-align: center; }
-        .slot img { width: 75px; height: 75px; image-rendering: pixelated; }
-        .name { font-weight: bold; margin-top: 5px; color: #ffcb05; font-size: 0.9em; }
-        .user-tag { font-size: 0.65em; color: #888; margin-bottom: 3px; text-transform: uppercase; }
+
+        /* Progress Bar oben */
+        #progress-container { 
+            width: 100%; 
+            height: 5px; 
+            background: #222; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            z-index: 1000; 
+        }
+        #progress-bar { 
+            width: 100%; 
+            height: 100%; 
+            background: #ffcb05; 
+            box-shadow: 0 0 10px #ffcb05;
+            transition: width 1s linear; 
+        }
+
+        h1 { 
+            color: #ffcb05; 
+            text-shadow: 3px 3px #3b4cca; 
+            margin-top: 30px; 
+            margin-bottom: 5px; 
+            font-size: 2.5em;
+        }
+
+        #last-update { 
+            font-size: 0.85em; 
+            color: #888; 
+            margin-bottom: 20px; 
+            transition: color 0.3s ease;
+        }
+
+        .update-flash { 
+            color: #00ff00 !important; 
+            font-weight: bold; 
+        }
+
+        /* Dashboard: Karten von links nach rechts, oben nach unten */
+        #dashboard { 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            gap: 20px; 
+            padding: 20px; 
+            max-width: 1400px;
+        }
+
+        /* Karten-Design */
+        .card { 
+            background: #1e1e1e; 
+            border: 2px solid #333; 
+            border-radius: 15px; 
+            width: 280px; 
+            box-shadow: 0 8px 16px rgba(0,0,0,0.6); 
+            overflow: hidden; 
+            transition: transform 0.2s ease;
+        }
+        .card:hover { transform: translateY(-5px); }
+
+        .route-header { 
+            background: #333; 
+            color: #ddd; 
+            font-size: 0.75em; 
+            font-weight: bold; 
+            padding: 8px; 
+            text-align: center; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+            border-bottom: 1px solid #444;
+        }
+
+        .card-content { padding: 15px; }
+
+        .pair { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+
+        .slot { 
+            flex: 1; 
+            text-align: center; 
+        }
+
+        .slot img { 
+            width: 80px; 
+            height: 80px; 
+            image-rendering: pixelated; 
+            margin-bottom: 5px;
+        }
+
+        .name { 
+            font-weight: bold; 
+            color: #ffcb05; 
+            font-size: 0.95em; 
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-tag { 
+            font-size: 0.65em; 
+            color: #aaa; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .link-icon { 
+            font-size: 1.5em; 
+            color: #ff4444; 
+            padding: 0 10px;
+            filter: drop-shadow(0 0 5px rgba(255, 68, 68, 0.3));
+        }
+
+        p.empty-msg { color: #666; margin-top: 50px; font-style: italic; }
     </style>
 </head>
 <body>
 
     <div id="progress-container"><div id="progress-bar"></div></div>
-    <h1>Soullink Live Tracker</h1>
-    <div id="last-update">Warte auf ersten Sync (60s Intervall)...</div>
-    <div id="dashboard"></div>
+    
+    <h1>Soullink Tracker</h1>
+    <div id="last-update">Initialisiere Daten-Verbindung...</div>
+    
+    <div id="dashboard">
+        </div>
 
     <script>
         const PUB_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRRij-4ewY3aNWCBWOhSHtpk7ay3J13O76Cu88DwFddgHwTgDHUa0srm5h6sC31MGVPfC8KWbfDEFU/pub?gid=0&single=true&output=csv';
         
-        const REFRESH_TIME = 60; // Sekunden
-        let secondsLeft = REFRESH_TIME;
+        const REFRESH_SECONDS = 60; 
+        let secondsLeft = REFRESH_SECONDS;
 
         async function update() {
             const statusLabel = document.getElementById('last-update');
             const board = document.getElementById('dashboard');
 
             try {
-                const buster = `&t=${Date.now()}&z=${Math.random().toString(36).substr(2)}`;
+                // Cache-Busting: Timestamp & Random String
+                const buster = `&nocache=${Date.now()}&z=${Math.random().toString(36).substr(2, 5)}`;
                 const response = await fetch(PUB_URL + buster);
+                
+                if (!response.ok) throw new Error("Netzwerk-Antwort war nicht ok");
+
                 const csvText = await response.text();
                 
-                if (csvText.includes("<html")) return;
+                // HTML-Check (falls Google eine Login-Seite schickt)
+                if (csvText.includes("<html") || csvText.length < 20) {
+                    console.warn("Ungültige Daten empfangen");
+                    return;
+                }
 
                 const rows = csvText.split(/\r?\n/).map(row => 
                     row.split(',').map(col => col.replace(/^"|"$/g, '').trim())
                 );
 
-                const player1 = rows[0][1] || "Jan";
-                const player2 = rows[0][2] || "Borian";
+                if (rows.length < 1) return;
+
+                // Spielernamen aus Header (B1 & C1)
+                const player1 = rows[0][1] || "Spieler 1";
+                const player2 = rows[0][2] || "Spieler 2";
                 
                 let htmlBuffer = "";
+                const uniqueCheck = new Set(); 
 
-                // Loop ab Zeile 1 (unter Header)
                 for (let i = 1; i < rows.length; i++) {
                     const cols = rows[i];
                     if (cols.length < 4) continue;
@@ -71,55 +190,70 @@
                     const location = cols[0] || "Route";
                     const p1 = cols[1];
                     const p2 = cols[2];
-                    const status = cols[3].toUpperCase();
+                    const status = cols[3]?.toUpperCase();
 
-                    if ((status === 'TRUE' || status === 'WAHR') && p1) {
-                        htmlBuffer += `
-                            <div class="card">
-                                <div class="route-header">${location}</div>
-                                <div class="card-content">
-                                    <div class="pair">
-                                        <div class="slot">
-                                            <div class="user-tag">${player1}</div>
-                                            <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${p1.toLowerCase()}.gif" onerror="this.style.visibility='hidden'">
-                                            <div class="name">${p1}</div>
-                                        </div>
-                                        <div style="color:#ff4444;">🔗</div>
-                                        <div class="slot">
-                                            <div class="user-tag">${player2}</div>
-                                            <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${p2.toLowerCase()}.gif" onerror="this.style.visibility='hidden'">
-                                            <div class="name">${p2}</div>
+                    // Nur aktive Zeilen anzeigen, Starter/Platzhalter ignorieren
+                    if ((status === 'TRUE' || status === 'WAHR') && p1 && p1.toLowerCase() !== "starter") {
+                        
+                        // Eindeutige ID für diese Zeile (gegen Cache-Artefakte)
+                        const rowId = `${location}-${p1}-${p2}`.toLowerCase();
+                        
+                        if (!uniqueCheck.has(rowId)) {
+                            uniqueCheck.add(rowId);
+                            
+                            htmlBuffer += `
+                                <div class="card">
+                                    <div class="route-header">${location}</div>
+                                    <div class="card-content">
+                                        <div class="pair">
+                                            <div class="slot">
+                                                <div class="user-tag">${player1}</div>
+                                                <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${p1.toLowerCase().replace('.','').replace(' ','-')}.gif" onerror="this.style.visibility='hidden'">
+                                                <div class="name">${p1}</div>
+                                            </div>
+                                            <div class="link-icon">🔗</div>
+                                            <div class="slot">
+                                                <div class="user-tag">${player2}</div>
+                                                <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${p2.toLowerCase().replace('.','').replace(' ','-')}.gif" onerror="this.style.visibility='hidden'">
+                                                <div class="name">${p2}</div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>`;
+                                </div>`;
+                        }
                     }
                 }
 
-                board.innerHTML = htmlBuffer; // Dashboard komplett neu zeichnen für korrekte Sortierung
-                statusLabel.innerText = `Letzter Sync: ${new Date().toLocaleTimeString()} | ${player1} & ${player2}`;
-                statusLabel.classList.add('flash');
-                setTimeout(() => statusLabel.classList.remove('flash'), 800);
+                board.innerHTML = htmlBuffer || "<p class='empty-msg'>Keine aktiven Paare gefunden. Markiere 'WAHR' in deinem Sheet!</p>";
                 
-                secondsLeft = REFRESH_TIME; // Timer zurücksetzen
+                // Zeitstempel-Update
+                statusLabel.innerText = `Letzter Sync: ${new Date().toLocaleTimeString()} | ${player1} & ${player2}`;
+                statusLabel.classList.add('update-flash');
+                setTimeout(() => statusLabel.classList.remove('update-flash'), 1000);
+                
+                secondsLeft = REFRESH_SECONDS; 
 
             } catch (e) {
-                console.warn("Sync fehlgeschlagen, probiere es gleich erneut.");
+                console.error("Fehler beim Abrufen:", e);
+                statusLabel.innerText = "Verbindung unterbrochen - versuche es erneut...";
             }
         }
 
-        // Timer-Logik für die Progress Bar
+        // Timer-Loop (1 Sekunde)
         setInterval(() => {
             secondsLeft--;
-            const percent = (secondsLeft / REFRESH_TIME) * 100;
-            document.getElementById('progress-bar').style.width = percent + "%";
+            if (secondsLeft < 0) secondsLeft = 0;
 
-            if (secondsLeft <= 0) {
+            const percent = (secondsLeft / REFRESH_SECONDS) * 100;
+            const bar = document.getElementById('progress-bar');
+            if (bar) bar.style.width = percent + "%";
+
+            if (secondsLeft === 0) {
                 update();
             }
         }, 1000);
 
-        // Erster Start
+        // Sofortiger Start beim Laden
         update();
     </script>
 </body>
