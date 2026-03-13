@@ -62,31 +62,29 @@
         .name { font-weight: bold; color: var(--primary); font-size: 0.95em; margin: 2px 0; }
         
         /* TYPEN-ICONS KORREKTUR */
-        .type-container { 
-            display: flex; 
-            justify-content: center; 
-            gap: 4px; 
-            height: 14px; 
-            margin-top: 4px;
-        }
-        .type-icon { 
-            height: 14px !important; /* Absolute Begrenzung */
-            max-height: 14px !important;
-            width: auto; 
-            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
-        }
+        .type-container { display: flex; justify-content: center; gap: 4px; height: 14px; margin-top: 4px; }
+        .type-icon { height: 14px !important; max-height: 14px !important; width: auto; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
         
         .user-tag { font-size: 0.6em; color: #777; margin-bottom: 4px; text-transform: uppercase; }
         .link-icon { color: #ff4444; font-size: 1.2em; opacity: 0.8; }
 
-        /* STATS */
-        .stats-container { max-width: 500px; margin: 20px auto; background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; }
+        /* STATS SEITE */
+        .stats-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .stats-container { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; flex: 1; min-width: 300px; max-width: 500px; }
+        
+        /* Balken für Deaths/Wipeouts */
         .stat-row { margin-bottom: 20px; text-align: left; }
         .stat-label { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; font-size: 0.85em; }
         .bar-bg { background: #111; height: 25px; border-radius: 4px; overflow: hidden; }
         .bar-fill { height: 100%; transition: width 1s ease-in-out; }
         .jan-bar { background: linear-gradient(90deg, #cc0000, #ff4444); }
         .phoadse-bar { background: linear-gradient(90deg, #999, #fff); }
+
+        /* Typen-Verteilung Grid */
+        #type-distribution { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-top: 15px; }
+        .type-stat-card { background: #2a2a2a; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #444; }
+        .type-stat-icon { height: 12px !important; max-height: 12px !important; margin-bottom: 5px; }
+        .type-stat-count { display: block; font-weight: bold; color: var(--primary); font-size: 0.9em; }
     </style>
 </head>
 <body>
@@ -98,14 +96,20 @@
 
     <div id="tracker" class="page active">
         <h1>Soullink Tracker</h1>
-        <div id="last-update" class="update-info">Sync läuft...</div>
-        <div id="dashboard">Lade Daten...</div>
+        <div id="last-update" class="update-info">Initialisiere...</div>
+        <div id="dashboard">Lade Pokémon-Paare...</div>
     </div>
 
     <div id="stats" class="page">
         <h1>Run Statistiken</h1>
-        <div class="stats-container"><h3>💀 Death Counter</h3><div id="death-bars"></div></div>
-        <div class="stats-container"><h3>🌋 Wipeout Counter</h3><div id="wipeout-bars"></div></div>
+        <div class="stats-grid">
+            <div class="stats-container"><h3>💀 Death Counter</h3><div id="death-bars"></div></div>
+            <div class="stats-container"><h3>🌋 Wipeout Counter</h3><div id="wipeout-bars"></div></div>
+            <div class="stats-container" style="max-width: 1000px; flex-basis: 100%;">
+                <h3>📊 Typen-Team-Verteilung</h3>
+                <div id="type-distribution"></div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -122,10 +126,11 @@
 
         function superClean(str) { return String(str).toLowerCase().replace(/[\s\t\n\r]/g, '').trim(); }
 
-        function getTypeIconsHTML(typeString) {
+        function getTypeIconsHTML(typeString, isStat = false) {
             if (!typeString || typeString === "???" || typeString === "Unbekannt") return "";
             const types = typeString.split(/[\s/]+/).filter(t => t.length > 0);
-            return types.map(t => `<img src="types/${superClean(t)}.png" class="type-icon" onerror="this.style.display='none'">`).join('');
+            const cssClass = isStat ? "type-stat-icon" : "type-icon";
+            return types.map(t => `<img src="types/${superClean(t)}.png" class="${cssClass}" onerror="this.style.display='none'">`).join('');
         }
 
         function handleImgError(imgElement, enName) {
@@ -162,6 +167,38 @@
             container.innerHTML = html;
         }
 
+        function renderTypeStats(pairsData) {
+            const typeCounts = {};
+            const statusIdx = pairsData[0].findIndex(c => String(c).toUpperCase().includes("GÜLTIG"));
+
+            for (let i = 1; i < pairsData.length; i++) {
+                const row = pairsData[i];
+                if (row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE') {
+                    [row[1], row[2]].forEach(name => {
+                        const pInfo = pokemonMap[superClean(name)];
+                        if (pInfo && pInfo.type) {
+                            const types = pInfo.type.split(/[\s/]+/);
+                            types.forEach(t => {
+                                const cleanT = superClean(t);
+                                if(cleanT) typeCounts[cleanT] = (typeCounts[cleanT] || 0) + 1;
+                            });
+                        }
+                    });
+                }
+            }
+
+            const sortedTypes = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+            let html = "";
+            sortedTypes.forEach(([type, count]) => {
+                html += `
+                    <div class="type-stat-card">
+                        <img src="types/${type}.png" class="type-stat-icon" onerror="this.style.display='none'">
+                        <span class="type-stat-count">${count}x</span>
+                    </div>`;
+            });
+            document.getElementById('type-distribution').innerHTML = html || "<p>Keine aktiven Pokémon im Team.</p>";
+        }
+
         async function update() {
             try {
                 const response = await fetch(API_URL);
@@ -194,9 +231,11 @@
                     }
                 }
                 document.getElementById('dashboard').innerHTML = trackerHtml || "<p class='empty-msg'>Keine aktiven Paare gefunden.</p>";
-                document.getElementById('last-update').innerText = "Letzter Sync: " + new Date().toLocaleTimeString();
+                document.getElementById('last-update').innerText = "Sync: " + new Date().toLocaleTimeString();
+                
                 renderBars('death-bars', json.stats.deaths);
                 renderBars('wipeout-bars', json.stats.wipeouts);
+                renderTypeStats(pairsData);
             } catch (e) { console.error(e); }
         }
 
