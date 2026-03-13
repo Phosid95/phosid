@@ -129,12 +129,23 @@
             }).join('');
         }
 
+        // Diese Funktion regelt den Bild-Wechsel bei Fehlern
         function handleImgError(imgElement, enName) {
+            // Wenn das GIF (Black-White) fehlschlägt, versuche das PNG (Scarlet-Violet)
             if (imgElement.src.includes('black-white')) {
+                console.log("GIF nicht gefunden, wechsle zu PNG für: " + enName);
                 imgElement.src = `https://img.pokemondb.net/sprites/scarlet-violet/normal/${enName}.png`;
-            } else {
-                imgElement.src = MISSING_NO_URL;
+            } 
+			else if (imgElement.src.includes('scarlet-violet')) {
+                console.log("PNG auch nicht gefunden, lade X&Y");
+                imgElement.src = `https://img.pokemondb.net/sprites/x-y/normal/${enName}.png`;
                 imgElement.onerror = null;
+            }
+            // Wenn auch das PNG fehlschlägt, lade MissingNo
+            else {
+                console.log("PNG auch nicht gefunden, lade MissingNo.");
+                imgElement.src = MISSING_NO_URL;
+                imgElement.onerror = null; // Verhindert Endlosschleife
             }
         }
 
@@ -243,3 +254,4 @@
     </script>
 </body>
 </html>
+
