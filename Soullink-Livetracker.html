@@ -19,7 +19,6 @@
             margin: 0; padding-bottom: 50px;
         }
 
-        /* Navigation & Progress */
         nav { 
             background: #222; padding: 10px; position: sticky; top: 0; 
             z-index: 2000; display: flex; justify-content: center; gap: 15px; 
@@ -32,7 +31,6 @@
         }
         nav button.active { background: var(--primary); color: black; }
 
-        /* Der schmale Ladebalken unter der Nav */
         #loading-bar-container { width: 100%; height: 3px; background: #222; position: sticky; top: 52px; z-index: 1999; }
         #loading-bar { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
 
@@ -43,7 +41,6 @@
         h1 { color: var(--primary); text-shadow: 2px 2px #3b4cca; margin-bottom: 5px; text-align: center; }
         .update-info { font-size: 0.75em; color: #888; margin-bottom: 20px; text-align: center; }
 
-        /* TRACKER KARTEN */
         #dashboard { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1400px; margin: 0 auto; }
         .card { background: var(--card); border: 2px solid #333; border-radius: 12px; overflow: hidden; width: 420px; }
         .route-header { background: #2a2a2a; padding: 8px; font-size: 0.7em; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #333; color: #999; }
@@ -52,12 +49,13 @@
         .slot { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; }
         .slot img.poke-sprite { width: 70px; height: 70px; object-fit: contain; margin-bottom: 5px; }
         .name { font-weight: bold; color: var(--primary); font-size: 0.95em; margin: 2px 0; }
+        
         .type-container { display: flex; justify-content: center; gap: 4px; height: 14px; margin-top: 4px; }
-        .type-icon { height: 14px !important; max-height: 14px !important; width: auto; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
+        .type-icon { height: 14px !important; max-height: 14px !important; width: auto; }
+        
         .user-tag { font-size: 0.6em; color: #777; margin-bottom: 4px; text-transform: uppercase; }
         .link-icon { color: #ff4444; font-size: 1.2em; }
 
-        /* STATS SEITE */
         .stats-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1200px; margin: 0 auto; }
         .stats-container { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; flex: 1; min-width: 320px; }
         .stat-row { margin-bottom: 20px; }
@@ -67,7 +65,6 @@
         .jan-bar { background: linear-gradient(90deg, #cc0000, #ff4444); }
         .phoadse-bar { background: linear-gradient(90deg, #999, #fff); }
 
-        /* Typ-Verteilung - Nur Rahmen gefärbt */
         #type-distribution { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
         .type-stat-card { 
             background: rgba(255,255,255,0.03); 
@@ -115,8 +112,8 @@
             normal: "#A8A77A", feuer: "#EE8130", wasser: "#6390F0", elektro: "#F7D02C", 
             pflanze: "#7AC74C", eis: "#96D9D6", kampf: "#C22E28", gift: "#A33EA1", 
             boden: "#E2BF65", flug: "#A98FF3", psycho: "#F95587", kaefer: "#A6B91A", 
-            gestein: "#B6A136", geist: "#735797", drache: "#6F35FC", unlicht: "#705746", 
-            stahl: "#B7B7CE", fee: "#D685AD"
+            käfer: "#A6B91A", gestein: "#B6A136", geist: "#735797", drache: "#6F35FC", 
+            unlicht: "#705746", stahl: "#B7B7CE", fee: "#D685AD"
         };
 
         function showPage(id, btn) {
@@ -126,13 +123,15 @@
             btn.classList.add('active');
         }
 
-        function superClean(str) { return String(str).toLowerCase().replace(/[\s\t\n\r]/g, '').trim(); }
+        function superClean(str) { 
+            return String(str).toLowerCase().trim().replace(/[\s\t\n\r]/g, ''); 
+        }
 
         function getTypeIconsHTML(typeString) {
             if (!typeString || typeString === "???" || typeString === "Unbekannt") return "";
             return typeString.split(/[\s/]+/).filter(t => t.length > 0).map(t => {
-                const ct = superClean(t).replace('ä','kaefer').replace('kaefer','kaefer'); // Redundanz für Sicherheit
-                return `<img src="types/${superClean(t).replace('ä','kaefer')}.png" class="type-icon" onerror="this.style.display='none'">`;
+                const cleanT = superClean(t);
+                return `<img src="types/${cleanT}.png" class="type-icon" onerror="this.style.display='none'">`;
             }).join('');
         }
 
@@ -152,12 +151,11 @@
             for (let i = 1; i < pairsData.length; i++) {
                 const row = pairsData[i];
                 if (row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE') {
-                    // Spieler 1 (Spalte B) und Spieler 2 (Spalte C)
                     [row[1], row[2]].forEach(name => {
                         const info = pokemonMap[superClean(name)];
                         if (info && info.type) {
                             info.type.split(/[\s/]+/).forEach(t => {
-                                const ct = superClean(t).replace('ä','kaefer');
+                                const ct = superClean(t);
                                 if(ct) counts[ct] = (counts[ct] || 0) + 1;
                             });
                         }
@@ -168,17 +166,12 @@
             const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
             const distDiv = document.getElementById('type-distribution');
             
-            if (sorted.length === 0) {
-                distDiv.innerHTML = "<p>Keine aktiven Pokémon im Team.</p>";
-                return;
-            }
-
             distDiv.innerHTML = sorted.map(([t, c]) => `
                 <div class="type-stat-card" style="border-left-color: ${typeColors[t] || '#555'}">
                     <img src="types/${t}.png" class="type-stat-icon" onerror="this.style.display='none'">
                     <span class="type-stat-count" style="color: ${typeColors[t] || '#fff'}">${c}x</span>
                 </div>
-            `).join('');
+            `).join('') || "<p>Keine aktiven Pokémon im Team.</p>";
         }
 
         function renderBars(targetId, dataArray) {
@@ -244,23 +237,20 @@
                 bar.style.width = "100%";
                 setTimeout(() => { bar.style.width = "0%"; }, 1000);
             } catch (e) { 
-                console.error("Update Fehler:", e); 
+                console.error(e);
                 bar.style.backgroundColor = "red";
-                document.getElementById('last-update').innerText = "Sync Fehler!";
             }
         }
 
         async function init() {
             try {
                 const r = await fetch('pokemon_with_types.json?v=' + Date.now());
-                const d = await r.json();
-                const m = d.pokemon ? d.pokemon : d;
-                for (let k in m) { pokemonMap[superClean(k)] = m[k]; }
+                const m = await r.json();
+                const data = m.pokemon ? m.pokemon : m;
+                for (let k in data) { pokemonMap[superClean(k)] = data[k]; }
                 await update();
                 setInterval(update, 30000);
-            } catch (err) {
-                console.error("Init Fehler:", err);
-            }
+            } catch (err) { console.error(err); }
         }
         init();
     </script>
