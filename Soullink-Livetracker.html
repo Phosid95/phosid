@@ -19,7 +19,6 @@
             margin: 0; padding-bottom: 50px;
         }
 
-        /* Navigation */
         nav { 
             background: #222; padding: 10px; position: sticky; top: 0; 
             z-index: 2000; display: flex; justify-content: center; gap: 15px; 
@@ -39,69 +38,55 @@
         h1 { color: var(--primary); text-shadow: 2px 2px #3b4cca; margin-bottom: 5px; text-align: center; }
         .update-info { font-size: 0.75em; color: #888; margin-bottom: 20px; text-align: center; }
 
-        /* KARTEN GRÖSSE KORREKTUR */
+        /* DASHBOARD & KARTEN */
         #dashboard { 
             display: flex; flex-wrap: wrap; justify-content: center; 
-            gap: 25px; max-width: 1400px; margin: 0 auto; 
+            gap: 20px; max-width: 1400px; margin: 0 auto; 
         }
         .card { 
-            background: var(--card); border: 2px solid #333; border-radius: 15px; 
-            overflow: hidden; width: 450px; /* Feste Basisbreite für Stabilität */
-            transition: 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            background: var(--card); border: 2px solid #333; border-radius: 12px; 
+            overflow: hidden; width: 420px; transition: 0.3s;
         }
-        .card:hover { transform: translateY(-5px); border-color: var(--primary); }
-        
         .route-header { 
-            background: #333; padding: 12px; font-size: 0.75em; 
+            background: #2a2a2a; padding: 8px; font-size: 0.7em; 
             font-weight: bold; text-align: center; text-transform: uppercase;
-            border-bottom: 1px solid #444; color: #aaa;
+            border-bottom: 1px solid #333; color: #999;
         }
 
-        .card-content { padding: 20px; }
-        .pair { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .card-content { padding: 15px; }
+        .pair { display: flex; justify-content: space-between; align-items: center; gap: 5px; }
         
-        /* Slot-Anpassung damit alles kompakt bleibt */
-		.slot { 
-			flex: 1; 
-			text-align: center; 
-			min-width: 120px; 
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-		}
-        .slot img { width: 90px; height: 90px; object-fit: contain; margin-bottom: 8px; }
+        .slot { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; }
+        .slot img.poke-sprite { width: 70px; height: 70px; object-fit: contain; margin-bottom: 5px; }
         
-        .name { font-weight: bold; color: var(--primary); font-size: 1em; margin: 5px 0; min-height: 1.2em; }
-        /* Gezielt für die Typen-Icons */
-		.type-container { 
-			display: flex; 
-			justify-content: center; 
-			gap: 3px;         /* Enge Abstände zwischen zwei Typen */
-			height: 14px;      /* Festgelegte Container-Höhe */
-			margin-top: 5px;   /* Kleiner Abstand zum Namen */
-		}
+        .name { font-weight: bold; color: var(--primary); font-size: 0.95em; margin: 2px 0; }
+        
+        /* TYPEN-ICONS KORREKTUR */
+        .type-container { 
+            display: flex; 
+            justify-content: center; 
+            gap: 4px; 
+            height: 14px; 
+            margin-top: 4px;
+        }
+        .type-icon { 
+            height: 14px !important; /* Absolute Begrenzung */
+            max-height: 14px !important;
+            width: auto; 
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+        }
+        
+        .user-tag { font-size: 0.6em; color: #777; margin-bottom: 4px; text-transform: uppercase; }
+        .link-icon { color: #ff4444; font-size: 1.2em; opacity: 0.8; }
 
-		.type-icon { 
-			height: 14px;      /* Icons werden auf 14 Pixel geschrumpft */
-			width: auto;       /* Breite passt sich proportional an */
-			filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));
-			display: block;    /* Verhindert komische Abstände unter dem Bild */
-		}
-        
-        .user-tag { font-size: 0.65em; color: #888; margin-bottom: 8px; text-transform: uppercase; font-weight: bold; }
-        .link-icon { color: #ff4444; font-size: 1.5em; flex-shrink: 0; }
-
-        /* Statistik Design */
-        .stats-container { max-width: 550px; margin: 25px auto; background: var(--card); padding: 35px; border-radius: 20px; border: 1px solid #333; }
-        .stat-row { margin-bottom: 30px; text-align: left; }
-        .stat-label { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; text-transform: uppercase; font-size: 0.9em; }
-        .bar-bg { background: #111; height: 35px; border-radius: 6px; overflow: hidden; border: 1px solid #444; }
-        .bar-fill { height: 100%; transition: width 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        
-        .jan-bar { background: linear-gradient(90deg, #cc0000 0%, #ff4444 100%); }
-        .phoadse-bar { background: linear-gradient(90deg, #bbbbbb 0%, #ffffff 100%); }
-
-        .empty-msg { color: #555; font-style: italic; margin-top: 50px; text-align: center; width: 100%; }
+        /* STATS */
+        .stats-container { max-width: 500px; margin: 20px auto; background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; }
+        .stat-row { margin-bottom: 20px; text-align: left; }
+        .stat-label { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; font-size: 0.85em; }
+        .bar-bg { background: #111; height: 25px; border-radius: 4px; overflow: hidden; }
+        .bar-fill { height: 100%; transition: width 1s ease-in-out; }
+        .jan-bar { background: linear-gradient(90deg, #cc0000, #ff4444); }
+        .phoadse-bar { background: linear-gradient(90deg, #999, #fff); }
     </style>
 </head>
 <body>
@@ -113,26 +98,19 @@
 
     <div id="tracker" class="page active">
         <h1>Soullink Tracker</h1>
-        <div id="last-update" class="update-info">Initialisiere...</div>
-        <div id="dashboard">Lade Pokémon-Paare...</div>
+        <div id="last-update" class="update-info">Sync läuft...</div>
+        <div id="dashboard">Lade Daten...</div>
     </div>
 
     <div id="stats" class="page">
         <h1>Run Statistiken</h1>
-        <div class="stats-container">
-            <h3>💀 Death Counter</h3>
-            <div id="death-bars"></div>
-        </div>
-        <div class="stats-container">
-            <h3>🌋 Wipeout Counter</h3>
-            <div id="wipeout-bars"></div>
-        </div>
+        <div class="stats-container"><h3>💀 Death Counter</h3><div id="death-bars"></div></div>
+        <div class="stats-container"><h3>🌋 Wipeout Counter</h3><div id="wipeout-bars"></div></div>
     </div>
 
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbyse91y4J3RwTzyywU6Miyl_pag8SdiwuOEOP4CvP-CwKTcO7bgRnij0FoFmXD-lxGp/exec';
         const MISSING_NO_URL = "https://www.pngkey.com/png/full/343-3434526_missingno-missingno-sprite.png";
-        
         let pokemonMap = {};
 
         function showPage(id, btn) {
@@ -153,8 +131,6 @@
         function handleImgError(imgElement, enName) {
             if (imgElement.src.includes('black-white')) {
                 imgElement.src = `https://img.pokemondb.net/sprites/scarlet-violet/normal/${enName}.png`;
-            } else if (imgElement.src.includes('scarlet-violet')) {
-                imgElement.src = `https://img.pokemondb.net/sprites/x-y/normal/${enName}.png`;
             } else {
                 imgElement.src = MISSING_NO_URL;
                 imgElement.onerror = null;
@@ -165,10 +141,9 @@
             try {
                 const response = await fetch('pokemon_with_types.json?v=' + Date.now());
                 const data = await response.json();
-                pokemonMap = {};
-                let rawMap = data.pokemon ? data.pokemon : data;
+                const rawMap = data.pokemon ? data.pokemon : data;
                 for (let key in rawMap) { pokemonMap[superClean(key)] = rawMap[key]; }
-            } catch (e) { console.error("JSON Fehler:", e); }
+            } catch (e) { console.error(e); }
         }
 
         function renderBars(targetId, dataArray) {
@@ -182,11 +157,7 @@
                 const count = parseInt(row[1]) || 0;
                 const perc = total > 0 ? (count / total * 100) : 0;
                 const barClass = name.toLowerCase().includes('jan') ? 'jan-bar' : 'phoadse-bar';
-                html += `
-                    <div class="stat-row">
-                        <div class="stat-label"><span>${name}</span><span>${count}</span></div>
-                        <div class="bar-bg"><div class="bar-fill ${barClass}" style="width: ${perc}%"></div></div>
-                    </div>`;
+                html += `<div class="stat-row"><div class="stat-label"><span>${name}</span><span>${count}</span></div><div class="bar-bg"><div class="bar-fill ${barClass}" style="width: ${perc}%"></div></div></div>`;
             });
             container.innerHTML = html;
         }
@@ -196,7 +167,6 @@
                 const response = await fetch(API_URL);
                 const json = await response.json();
                 const pairsData = json.pairs;
-                const board = document.getElementById('dashboard');
                 const statusIdx = pairsData[0].findIndex(c => String(c).toUpperCase().includes("GÜLTIG"));
                 const playerNames = [];
                 for(let col=1; col < statusIdx; col++) if(pairsData[0][col]) playerNames.push(pairsData[0][col]);
@@ -204,8 +174,7 @@
                 let trackerHtml = "";
                 for (let i = 1; i < pairsData.length; i++) {
                     const row = pairsData[i];
-                    const isTrue = (row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE');
-                    if (isTrue && row[1]) {
+                    if ((row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE') && row[1]) {
                         let slots = "";
                         for (let p=0; p < playerNames.length; p++) {
                             const rawName = String(row[p+1]).trim();
@@ -214,7 +183,7 @@
                             slots += `
                                 <div class="slot">
                                     <div class="user-tag">${playerNames[p]}</div>
-                                    <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${imgName}.gif" onerror="handleImgError(this, '${imgName}')">
+                                    <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${imgName}.gif" class="poke-sprite" onerror="handleImgError(this, '${imgName}')">
                                     <div class="name">${rawName}</div>
                                     <div class="type-container">${getTypeIconsHTML(pInfo.type)}</div>
                                 </div>
@@ -224,11 +193,11 @@
                         trackerHtml += `<div class="card"><div class="route-header">${row[0]}</div><div class="card-content"><div class="pair">${slots}</div></div></div>`;
                     }
                 }
-                board.innerHTML = trackerHtml || "<p class='empty-msg'>Keine aktiven Paare gefunden.</p>";
-                document.getElementById('last-update').innerText = "Sync: " + new Date().toLocaleTimeString();
+                document.getElementById('dashboard').innerHTML = trackerHtml || "<p class='empty-msg'>Keine aktiven Paare gefunden.</p>";
+                document.getElementById('last-update').innerText = "Letzter Sync: " + new Date().toLocaleTimeString();
                 renderBars('death-bars', json.stats.deaths);
                 renderBars('wipeout-bars', json.stats.wipeouts);
-            } catch (e) { console.error("Update Fehler:", e); }
+            } catch (e) { console.error(e); }
         }
 
         async function init() {
