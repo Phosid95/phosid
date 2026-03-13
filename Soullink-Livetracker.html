@@ -205,14 +205,21 @@
                 });
             });
         
-            const render = (data, min, cl) => Object.entries(data)
+            const render = (data, min, cl, isRes) => Object.entries(data)
                 .filter(e => e[1] >= min)
                 .sort((a,b) => b[1]-a[1])
-                .map(e => `<div class="radar-chip ${cl}"><img src="types/${e[0]}.png" height="10"> ${e[1]}x</div>`)
+                .map(e => {
+                    // Spezial-Style für Immunitäten (wenn der Wert hoch ist oder es ein spezifischer Typ ist)
+                    const isImmunity = isRes && e[1] >= 2; 
+                    const extraStyle = isImmunity ? 'border: 1px solid gold; box-shadow: 0 0 5px gold;' : '';
+                    const icon = isImmunity ? '🛡️ ' : '';
+                    
+                    return `<div class="radar-chip ${cl}" style="${extraStyle}">${icon}<img src="types/${e[0]}.png" height="10"> ${e[1]}x</div>`;
+                })
                 .join('');
-        
-            document.getElementById('weakness-radar').innerHTML = render(weak, 3, 'weak-warning') || "Keine kritischen Schwächen.";
-            document.getElementById('resistance-radar').innerHTML = render(res, 1, 'res-info') || "Keine Resistenzen.";
+            
+            document.getElementById('weakness-radar').innerHTML = render(weak, 3, 'weak-warning', false) || "Keine kritischen Schwächen.";
+            document.getElementById('resistance-radar').innerHTML = render(res, 1, 'res-info', true) || "Keine Resistenzen.";
         }
 
         async function update() {
@@ -301,6 +308,7 @@
     </script>
 </body>
 </html>
+
 
 
 
