@@ -34,7 +34,7 @@
         .card { 
             background: #1e1e1e; border: 2px solid #333; border-radius: 15px; 
             box-shadow: 0 8px 16px rgba(0,0,0,0.6); overflow: hidden; 
-            transition: transform 0.2s ease; min-width: 280px;
+            transition: transform 0.2s ease; min-width: 300px;
         }
         .card:hover { transform: translateY(-5px); }
 
@@ -45,9 +45,26 @@
 
         .card-content { padding: 15px; }
         .pair { display: flex; justify-content: center; align-items: center; gap: 10px; }
-        .slot { flex: 1; text-align: center; min-width: 100px; }
-        .slot img { width: 80px; height: 80px; image-rendering: auto; margin-bottom: 5px; object-fit: contain; }
-        .name { font-weight: bold; color: #ffcb05; font-size: 0.9em; }
+        .slot { flex: 1; text-align: center; min-width: 110px; }
+        
+        .slot img { 
+            width: 80px; height: 80px; image-rendering: auto; margin-bottom: 5px; object-fit: contain; 
+        }
+
+        .name { font-weight: bold; color: #ffcb05; font-size: 0.95em; margin-bottom: 4px; }
+        
+        /* Type Badge Style */
+        .type-label { 
+            display: inline-block;
+            font-size: 0.65em;
+            background: #333;
+            color: #bbb;
+            padding: 2px 8px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         .user-tag { font-size: 0.6em; color: #aaa; text-transform: uppercase; margin-bottom: 5px; }
         .link-icon { font-size: 1.2em; color: #ff4444; }
         .empty-msg { color: #555; margin-top: 50px; font-style: italic; }
@@ -56,16 +73,14 @@
 <body>
 
     <div id="progress-container"><div id="progress-bar"></div></div>
-    <h1>Soullink Live Tracker</h1>
-    <div id="last-update">Initialisiere Daten...</div>
+    <h1>Soullink Tracker</h1>
+    <div id="last-update">Initialisiere Pokédex...</div>
     <div id="dashboard"></div>
 
     <script>
-        // --- KONFIGURATION ---
         const API_URL = 'https://script.google.com/macros/s/AKfycbxSB2hu6jWcDEDP0onx8IqBAdY49URenMbM8UdN7El921Lg6fQeq1pP86Y9r-yG5D-O/exec'; 
-        const REFRESH_SECONDS = 10;
-        
-        const MISSING_NO_URL = "https://www.pngkey.com/png/full/343-3434526_missingno-missingno-sprite.png";
+        const REFRESH_SECONDS = 30;
+        const MISSING_NO_URL = "https://vignette.wikia.nocookie.net/nintendo/images/8/85/MissingNo.png";
         
         let pokemonMap = {}; 
         let secondsLeft = REFRESH_SECONDS;
@@ -76,7 +91,7 @@
 
         async function loadTranslations() {
             try {
-                const response = await fetch('pokemon.json?v=' + Date.now());
+                const response = await fetch('pokemon_with_types.json?v=' + Date.now());
                 if (!response.ok) throw new Error("JSON konnte nicht geladen werden");
                 const data = await response.json();
                 let rawMap = data.pokemon ? data.pokemon : data;
@@ -85,29 +100,18 @@
                 for (let key in rawMap) {
                     pokemonMap[superClean(key)] = rawMap[key];
                 }
-                console.log("Übersetzungstabelle geladen.");
+                console.log("Pokédex-Daten geladen.");
             } catch (e) {
                 console.error("Übersetzungs-Fehler:", e);
             }
         }
 
-        // Diese Funktion regelt den Bild-Wechsel bei Fehlern
         function handleImgError(imgElement, enName) {
-            // Wenn das GIF (Black-White) fehlschlägt, versuche das PNG (Scarlet-Violet)
             if (imgElement.src.includes('black-white')) {
-                console.log("GIF nicht gefunden, wechsle zu PNG für: " + enName);
                 imgElement.src = `https://img.pokemondb.net/sprites/scarlet-violet/normal/${enName}.png`;
-            } 
-			else if (imgElement.src.includes('scarlet-violet')) {
-                console.log("PNG auch nicht gefunden, lade X&Y");
-                imgElement.src = `https://img.pokemondb.net/sprites/x-y/normal/${enName}.png`;
-                imgElement.onerror = null;
-            }
-            // Wenn auch das PNG fehlschlägt, lade MissingNo
-            else {
-                console.log("PNG auch nicht gefunden, lade MissingNo.");
+            } else if (imgElement.src.includes('scarlet-violet')) {
                 imgElement.src = MISSING_NO_URL;
-                imgElement.onerror = null; // Verhindert Endlosschleife
+                imgElement.onerror = null;
             }
         }
 
@@ -141,34 +145,34 @@
                         let playerSlotsHtml = "";
                         
                         for (let pIdx = 0; pIdx < playerNames.length; pIdx++) {
-                            const pName = playerNames[pIdx];
                             const deNameRaw = String(row[pIdx + 1]).trim();
                             const deNameClean = superClean(deNameRaw);
                             
-                            let enName = pokemonMap[deNameClean] || deNameClean;
+                            // Abfrage der neuen Objekt-Struktur
+                            const pokeData = pokemonMap[deNameClean];
+                            const enName = pokeData ? (pokeData.en || deNameClean) : deNameClean;
+                            const pType = pokeData ? (pokeData.type || "Unbekannt") : "???";
 
-                            // Namen für URL säubern
                             const imgName = String(enName).toLowerCase().trim()
                                             .replace(/\s+/g, '-')
                                             .replace(/\./g, '')
                                             .replace('♀', '-f')
                                             .replace('♂', '-m');
 
-                            // Start mit dem animierten GIF
                             const startUrl = `https://img.pokemondb.net/sprites/black-white/anim/normal/${imgName}.gif`;
 
                             playerSlotsHtml += `
                                 <div class="slot">
-                                    <div class="user-tag">${pName}</div>
-                                    <img src="${startUrl}" 
-                                         onerror="handleImgError(this, '${imgName}')">
+                                    <div class="user-tag">${playerNames[pIdx]}</div>
+                                    <img src="${startUrl}" onerror="handleImgError(this, '${imgName}')">
                                     <div class="name">${deNameRaw}</div>
+                                    <div class="type-label">${pType}</div>
                                 </div>
                                 ${pIdx < playerNames.length - 1 ? '<div class="link-icon">🔗</div>' : ''}
                             `;
                         }
 
-                        const cardWidth = Math.max(280, playerNames.length * 140);
+                        const cardWidth = Math.max(300, playerNames.length * 150);
                         htmlBuffer += `
                             <div class="card" style="width: ${cardWidth}px;">
                                 <div class="route-header">${row[0]}</div>
@@ -179,8 +183,6 @@
 
                 board.innerHTML = htmlBuffer || "<p class='empty-msg'>Keine aktiven Paare gefunden.</p>";
                 statusLabel.innerText = `Echtzeit-Sync: ${new Date().toLocaleTimeString()} | Spieler: ${playerNames.join(' & ')}`;
-                statusLabel.classList.add('update-flash');
-                setTimeout(() => statusLabel.classList.remove('update-flash'), 1000);
                 
                 secondsLeft = REFRESH_SECONDS; 
             } catch (e) {
@@ -192,7 +194,6 @@
         async function init() {
             await loadTranslations(); 
             await update();                 
-            
             setInterval(() => {
                 secondsLeft--;
                 if (secondsLeft < 0) secondsLeft = 0;
@@ -201,7 +202,6 @@
                 if (secondsLeft === 0) update();
             }, 1000);
         }
-
         init();
     </script>
 </body>
