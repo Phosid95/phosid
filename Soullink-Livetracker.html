@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soullink Pro Tracker v30</title>
+    <title>Soullink Pro Tracker v33</title>
     <style>
         :root { 
             --primary: #ffcb05; 
@@ -11,15 +11,12 @@
             --card: #1e1e1e; 
             --color-jan: #ff4444; 
             --color-phoadse: #ffffff;
-            --dead: #444;
+            --danger: #ff4444;
+            --success: #00c851;
         }
 
-        body { 
-            background: var(--bg); color: white; 
-            font-family: 'Segoe UI', Tahoma, sans-serif; 
-            margin: 0; padding-bottom: 50px;
-        }
-
+        body { background: var(--bg); color: white; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding-bottom: 50px; }
+        
         nav { 
             background: #222; padding: 10px; position: sticky; top: 0; 
             z-index: 2000; display: flex; justify-content: center; gap: 10px; 
@@ -44,23 +41,19 @@
 
         #dashboard, #graveyard-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1400px; margin: 0 auto; }
         
-        /* Karten-Styling */
         .card { background: var(--card); border: 2px solid #333; border-radius: 12px; overflow: hidden; width: 420px; transition: 0.3s; }
         .route-header { background: #2a2a2a; padding: 8px; font-size: 0.7em; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #333; color: #999; }
         .card-content { padding: 15px; }
         .pair { display: flex; justify-content: space-between; align-items: center; gap: 5px; }
         .slot { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; }
         
-        /* Sprites & Links */
         .poke-link { transition: transform 0.2s; display: inline-block; }
-        .poke-link:hover { transform: scale(1.1); }
+        .poke-link:hover { transform: scale(1.1); filter: drop-shadow(0 0 8px var(--primary)); }
         .slot img.poke-sprite { width: 70px; height: 70px; object-fit: contain; margin-bottom: 5px; }
         
-        /* Friedhof Spezial-Effekt */
-        .dead-card { border-color: #222; filter: grayscale(0.6); opacity: 0.8; }
+        .dead-card { border-color: #222; filter: grayscale(0.7); opacity: 0.7; }
         .dead-card .poke-sprite { filter: grayscale(1) brightness(0.7); }
         .dead-card .name { color: #888 !important; text-decoration: line-through; }
-        .dead-card .route-header { background: #1a1a1a; color: #555; }
 
         .name { font-weight: bold; color: var(--primary); font-size: 0.95em; margin: 2px 0; }
         .type-container { display: flex; justify-content: center; gap: 4px; height: 14px; margin-top: 4px; }
@@ -68,7 +61,7 @@
         .user-tag { font-size: 0.6em; color: #777; margin-bottom: 4px; text-transform: uppercase; }
         .link-icon { color: #ff4444; font-size: 1.2em; }
 
-        /* Stats */
+        /* Stats & Radar */
         .stats-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1200px; margin: 0 auto; }
         .stats-container { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; flex: 1; min-width: 320px; }
         .stat-row { margin-bottom: 20px; }
@@ -78,10 +71,13 @@
         .jan-bar { background: linear-gradient(90deg, #cc0000, #ff4444); }
         .phoadse-bar { background: linear-gradient(90deg, #999, #fff); }
 
+        .radar-box { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+        .radar-chip { padding: 5px 10px; border-radius: 4px; font-size: 0.75em; font-weight: bold; display: flex; align-items: center; gap: 5px; border: 1px solid rgba(255,255,255,0.1); }
+        .weak-warning { background: rgba(255, 68, 68, 0.2); border-color: var(--danger); color: #ff8888; }
+        .res-info { background: rgba(0, 200, 81, 0.1); border-color: var(--success); color: #88ff88; }
+
         #type-distribution { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
         .type-stat-card { background: rgba(255,255,255,0.03); border-left: 4px solid #555; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
-        .type-stat-icon { height: 12px !important; }
-        .type-stat-count { font-weight: bold; font-size: 0.9em; }
     </style>
 </head>
 <body>
@@ -89,13 +85,13 @@
     <nav>
         <button onclick="showPage('tracker', this)" class="active">Team</button>
         <button onclick="showPage('graveyard', this)">Friedhof 💀</button>
-        <button onclick="showPage('stats', this)">Stats</button>
+        <button onclick="showPage('stats', this)">Strategie & Stats</button>
     </nav>
     <div id="loading-bar-container"><div id="loading-bar"></div></div>
 
     <div id="tracker" class="page active">
         <h1>Aktives Team</h1>
-        <div id="last-update" class="update-info">Sync läuft...</div>
+        <div id="last-update" class="update-info">Initialisiere...</div>
         <div id="dashboard">Lade Pokémon...</div>
     </div>
 
@@ -105,13 +101,18 @@
     </div>
 
     <div id="stats" class="page">
-        <h1>Run Statistiken</h1>
+        <h1>Analyse-Zentrale</h1>
         <div class="stats-grid">
-            <div class="stats-container"><h3>💀 Death Counter</h3><div id="death-bars"></div></div>
-            <div class="stats-container"><h3>🌋 Wipeout Counter</h3><div id="wipeout-bars"></div></div>
-            <div class="stats-container" style="flex-basis: 100%; max-width: 100%;">
-                <h3>📊 Typen-Verteilung (Aktives Team)</h3>
-                <div id="type-distribution"></div>
+            <div class="stats-container" style="flex-basis: 100%;">
+                <h3>🚨 Schwächen-Radar (Gefahr ab 3x)</h3>
+                <div id="weakness-radar" class="radar-box">Berechne...</div>
+                <h3 style="margin-top:20px;">🛡️ Team-Resistenzen</h3>
+                <div id="resistance-radar" class="radar-box">Berechne...</div>
+            </div>
+            <div class="stats-container"><h3>📊 Typen-Verteilung</h3><div id="type-distribution"></div></div>
+            <div class="stats-container">
+                <h3>💀 Death Counter</h3><div id="death-bars"></div>
+                <h3 style="margin-top:20px;">🌋 Wipeouts</h3><div id="wipeout-bars"></div>
             </div>
         </div>
     </div>
@@ -121,13 +122,28 @@
         const MISSING_NO_URL = "https://www.pngkey.com/png/full/343-3434526_missingno-missingno-sprite.png";
         let pokemonMap = {};
 
-        const typeColors = {
-            normal: "#A8A77A", feuer: "#EE8130", wasser: "#6390F0", elektro: "#F7D02C", 
-            pflanze: "#7AC74C", eis: "#96D9D6", kampf: "#C22E28", gift: "#A33EA1", 
-            boden: "#E2BF65", flug: "#A98FF3", psycho: "#F95587", kaefer: "#A6B91A", 
-            gestein: "#B6A136", geist: "#735797", drache: "#6F35FC", unlicht: "#705746", 
-            stahl: "#B7B7CE", fee: "#D685AD"
+        const typeChart = {
+            normal: { weak: ['kampf'], res: [], imm: ['geist'] },
+            feuer: { weak: ['wasser', 'boden', 'gestein'], res: ['feuer', 'pflanze', 'eis', 'kaefer', 'stahl', 'fee'], imm: [] },
+            wasser: { weak: ['pflanze', 'elektro'], res: ['feuer', 'wasser', 'eis', 'stahl'], imm: [] },
+            elektro: { weak: ['boden'], res: ['elektro', 'flug', 'stahl'], imm: [] },
+            pflanze: { weak: ['feuer', 'eis', 'gift', 'flug', 'kaefer'], res: ['wasser', 'pflanze', 'elektro', 'boden'], imm: [] },
+            eis: { weak: ['feuer', 'kampf', 'gestein', 'stahl'], res: ['eis'], imm: [] },
+            kampf: { weak: ['flug', 'psycho', 'fee'], res: ['kaefer', 'gestein', 'unlicht'], imm: [] },
+            gift: { weak: ['boden', 'psycho'], res: ['pflanze', 'kampf', 'gift', 'kaefer', 'fee'], imm: [] },
+            boden: { weak: ['wasser', 'pflanze', 'eis'], res: ['gift', 'gestein'], imm: ['elektro'] },
+            flug: { weak: ['elektro', 'eis', 'gestein'], res: ['pflanze', 'kampf', 'kaefer'], imm: ['boden'] },
+            psycho: { weak: ['kaefer', 'geist', 'unlicht'], res: ['kampf', 'psycho'], imm: [] },
+            kaefer: { weak: ['feuer', 'flug', 'gestein'], res: ['pflanze', 'kampf', 'boden'], imm: [] },
+            gestein: { weak: ['wasser', 'pflanze', 'kampf', 'boden', 'stahl'], res: ['normal', 'feuer', 'gift', 'flug'], imm: [] },
+            geist: { weak: ['geist', 'unlicht'], res: ['gift', 'kaefer'], imm: ['normal', 'kampf'] },
+            drache: { weak: ['eis', 'drache', 'fee'], res: ['feuer', 'wasser', 'pflanze', 'elektro'], imm: [] },
+            unlicht: { weak: ['kampf', 'kaefer', 'fee'], res: ['geist', 'unlicht'], imm: ['psycho'] },
+            stahl: { weak: ['feuer', 'kampf', 'boden'], res: ['normal', 'pflanze', 'eis', 'flug', 'psycho', 'kaefer', 'gestein', 'drache', 'stahl', 'fee'], imm: ['gift'] },
+            fee: { weak: ['gift', 'stahl'], res: ['kampf', 'kaefer', 'unlicht'], imm: ['drache'] }
         };
+
+        const typeColors = { normal: "#A8A77A", feuer: "#EE8130", wasser: "#6390F0", elektro: "#F7D02C", pflanze: "#7AC74C", eis: "#96D9D6", kampf: "#C22E28", gift: "#A33EA1", boden: "#E2BF65", flug: "#A98FF3", psycho: "#F95587", kaefer: "#A6B91A", gestein: "#B6A136", geist: "#735797", drache: "#6F35FC", unlicht: "#705746", stahl: "#B7B7CE", fee: "#D685AD" };
 
         function showPage(id, btn) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -136,74 +152,42 @@
             btn.classList.add('active');
         }
 
-        function superClean(str) { return String(str).toLowerCase().trim().replace(/[\s\t\n\r]/g, ''); }
+        function superClean(str) { return String(str).toLowerCase().trim().replace(/[\s\t\n\r]/g, '').replace('ä','kaefer'); }
+
+        function handleImgError(imgElement, enName) {
+            if (imgElement.src.includes('black-white')) {
+                imgElement.src = `https://img.pokemondb.net/sprites/scarlet-violet/normal/${enName}.png`;
+            } else if (imgElement.src.includes('scarlet-violet')) {
+                imgElement.src = `https://img.pokemondb.net/sprites/x-y/normal/${enName}.png`;
+            } else {
+                imgElement.src = MISSING_NO_URL;
+                imgElement.onerror = null;
+            }
+        }
 
         function getTypeIconsHTML(typeString) {
             if (!typeString || typeString === "???" || typeString === "Unbekannt") return "";
             return typeString.split(/[\s/]+/).filter(t => t.length > 0).map(t => {
-                const ct = superClean(t).replace('ä','kaefer');
+                const ct = superClean(t);
                 return `<img src="types/${ct}.png" class="type-icon" onerror="this.style.display='none'">`;
             }).join('');
         }
 
-        // Diese Funktion regelt den Bild-Wechsel bei Fehlern
-        function handleImgError(imgElement, enName) {
-            // Wenn das GIF (Black-White) fehlschlägt, versuche das PNG (Scarlet-Violet)
-            if (imgElement.src.includes('black-white')) {
-                console.log("GIF nicht gefunden, wechsle zu PNG für: " + enName);
-                imgElement.src = `https://img.pokemondb.net/sprites/scarlet-violet/normal/${enName}.png`;
-            } 
-			else if (imgElement.src.includes('scarlet-violet')) {
-                console.log("PNG auch nicht gefunden, lade X&Y");
-                imgElement.src = `https://img.pokemondb.net/sprites/x-y/normal/${enName}.png`;
-                imgElement.onerror = null;
-            }
-            // Wenn auch das PNG fehlschlägt, lade MissingNo
-            else {
-                console.log("PNG auch nicht gefunden, lade MissingNo.");
-                imgElement.src = MISSING_NO_URL;
-                imgElement.onerror = null; // Verhindert Endlosschleife
-            }
-        }
-
-        function renderTypeStats(pairsData) {
-            const counts = {};
-            const statusIdx = pairsData[0].findIndex(c => String(c).toUpperCase().includes("GÜLTIG"));
-            for (let i = 1; i < pairsData.length; i++) {
-                const row = pairsData[i];
-                const isAlive = (row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE');
-                if (isAlive && row[1]) {
-                    [row[1], row[2]].forEach(name => {
-                        const info = pokemonMap[superClean(name)];
-                        if (info && info.type) {
-                            info.type.split(/[\s/]+/).forEach(t => {
-                                const ct = superClean(t).replace('ä','kaefer');
-                                if(ct) counts[ct] = (counts[ct] || 0) + 1;
-                            });
-                        }
-                    });
-                }
-            }
-            const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
-            document.getElementById('type-distribution').innerHTML = sorted.map(([t, c]) => `
-                <div class="type-stat-card" style="border-left-color: ${typeColors[t] || '#555'}">
-                    <img src="types/${t}.png" class="type-stat-icon" onerror="this.style.display='none'">
-                    <span class="type-stat-count" style="color: ${typeColors[t] || '#fff'}">${c}x</span>
-                </div>
-            `).join('') || "<p>Kein Team aktiv.</p>";
-        }
-
-        function renderBars(targetId, dataArray) {
-            const container = document.getElementById(targetId);
-            if (!dataArray || dataArray.length < 2) return;
-            const stats = dataArray.slice(1); 
-            const total = stats.reduce((sum, row) => sum + (parseInt(row[1]) || 0), 0);
-            container.innerHTML = stats.map(row => {
-                const val = parseInt(row[1]) || 0;
-                const perc = total > 0 ? (val / total * 100) : 0;
-                const barClass = row[0].toLowerCase().includes('jan') ? 'jan-bar' : 'phoadse-bar';
-                return `<div class="stat-row"><div class="stat-label"><span>${row[0]}</span><span>${val}</span></div><div class="bar-bg"><div class="bar-fill ${barClass}" style="width: ${perc}%"></div></div></div>`;
-            }).join('');
+        function calculateRadar(teamTypeStrings) {
+            let weak = {}; let res = {};
+            teamTypeStrings.forEach(s => {
+                s.split(/[\s/]+/).forEach(t => {
+                    const ct = superClean(t);
+                    if(typeChart[ct]) {
+                        typeChart[ct].weak.forEach(w => weak[w] = (weak[w] || 0) + 1);
+                        typeChart[ct].res.forEach(r => res[r] = (res[r] || 0) + 1);
+                        typeChart[ct].imm.forEach(i => res[i] = (res[i] || 0) + 1);
+                    }
+                });
+            });
+            const render = (data, min, cl) => Object.entries(data).filter(e => e[1] >= min).sort((a,b) => b[1]-a[1]).map(e => `<div class="radar-chip ${cl}"><img src="types/${e[0]}.png" height="10"> ${e[1]}x</div>`).join('');
+            document.getElementById('weakness-radar').innerHTML = render(weak, 3, 'weak-warning') || "Keine kritischen Schwächen.";
+            document.getElementById('resistance-radar').innerHTML = render(res, 1, 'res-info') || "Keine Resistenzen.";
         }
 
         async function update() {
@@ -214,54 +198,61 @@
                 const json = await response.json();
                 bar.style.width = "70%";
                 
-                const pairsData = json.pairs;
-                const statusIdx = pairsData[0].findIndex(c => String(c).toUpperCase().includes("GÜLTIG"));
-                const playerNames = [];
-                for(let col=1; col < statusIdx; col++) if(pairsData[0][col]) playerNames.push(pairsData[0][col]);
+                const pairs = json.pairs;
+                const statusIdx = pairs[0].findIndex(c => String(c).toUpperCase().includes("GÜLTIG"));
+                const pNames = [];
+                for(let col=1; col < statusIdx; col++) if(pairs[0][col]) pNames.push(pairs[0][col]);
 
-                let trackerHtml = "";
-                let graveyardHtml = "";
+                let teamHtml = ""; let graveHtml = ""; let activeTypes = []; let typeCounts = {};
 
-                for (let i = 1; i < pairsData.length; i++) {
-                    const row = pairsData[i];
-                    if (!row[1]) continue;
-
-                    const isAlive = (row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE');
-                    
+                for (let i = 1; i < pairs.length; i++) {
+                    const row = pairs[i]; if (!row[1]) continue;
+                    const alive = (row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE');
                     let slots = "";
-                    for (let p=0; p < playerNames.length; p++) {
+
+                    for (let p=0; p < pNames.length; p++) {
                         const rawName = String(row[p+1]).trim();
-                        const pInfo = pokemonMap[superClean(rawName)] || { en: rawName, type: "???" };
-                        const imgName = pInfo.en.toLowerCase().replace(/\s+/g, '-').replace('♀','-f').replace('♂','-m');
-                        const wikiUrl = `https://www.pokewiki.de/${rawName.replace(/\s+/g, '-')}`;
+                        const info = pokemonMap[superClean(rawName)] || { en: rawName, type: "???" };
+                        const img = info.en.toLowerCase().replace(/\s+/g, '-').replace('♀','-f').replace('♂','-m');
+                        
+                        if(alive && info.type !== "???") {
+                            activeTypes.push(info.type);
+                            info.type.split(/[\s/]+/).forEach(t => { const ct = superClean(t); typeCounts[ct] = (typeCounts[ct] || 0) + 1; });
+                        }
 
                         slots += `
                             <div class="slot">
-                                <div class="user-tag">${playerNames[p]}</div>
-                                <a href="${wikiUrl}" target="_blank" class="poke-link" title="${rawName} Wiki">
-                                    <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${imgName}.gif" class="poke-sprite" onerror="handleImgError(this, '${imgName}')">
+                                <div class="user-tag">${pNames[p]}</div>
+                                <a href="https://www.pokewiki.de/${rawName.replace(/\s+/g, '-')}" target="_blank" class="poke-link">
+                                    <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${img}.gif" class="poke-sprite" onerror="handleImgError(this, '${img}')">
                                 </a>
                                 <div class="name">${rawName}</div>
-                                <div class="type-container">${getTypeIconsHTML(pInfo.type)}</div>
+                                <div class="type-container">${getTypeIconsHTML(info.type)}</div>
                             </div>
-                            ${p < playerNames.length - 1 ? '<div class="link-icon">🔗</div>' : ''}
-                        `;
+                            ${p < pNames.length - 1 ? '<div class="link-icon">🔗</div>' : ''}`;
                     }
 
-                    const cardHtml = `<div class="card ${isAlive ? '' : 'dead-card'}"><div class="route-header">${row[0]}</div><div class="card-content"><div class="pair">${slots}</div></div></div>`;
-                    
-                    if (isAlive) trackerHtml += cardHtml;
-                    else graveyardHtml += cardHtml;
+                    const html = `<div class="card ${alive ? '' : 'dead-card'}"><div class="route-header">${row[0]}</div><div class="card-content"><div class="pair">${slots}</div></div></div>`;
+                    if(alive) teamHtml += html; else graveHtml += html;
                 }
 
-                document.getElementById('dashboard').innerHTML = trackerHtml || "<p>Keine aktiven Pokémon.</p>";
-                document.getElementById('graveyard-list').innerHTML = graveyardHtml || "<p>Noch keine Verluste! Stark!</p>";
+                document.getElementById('dashboard').innerHTML = teamHtml || "<p>Keine aktiven Pokémon.</p>";
+                document.getElementById('graveyard-list').innerHTML = graveHtml || "<p>Keine Verluste.</p>";
                 document.getElementById('last-update').innerText = "Sync: " + new Date().toLocaleTimeString();
                 
-                renderBars('death-bars', json.stats.deaths);
-                renderBars('wipeout-bars', json.stats.wipeouts);
-                renderTypeStats(pairsData);
+                calculateRadar(activeTypes);
+                const sortedTypes = Object.entries(typeCounts).sort((a,b) => b[1]-a[1]);
+                document.getElementById('type-distribution').innerHTML = sortedTypes.map(e => `<div class="type-stat-card" style="border-left-color: ${typeColors[e[0]] || '#555'}"><img src="types/${e[0]}.png" class="type-icon"> <b style="color:${typeColors[e[0]]}">${e[1]}x</b></div>`).join('') || "Keine Daten.";
                 
+                const renderBarUI = (id, data) => {
+                    if(!data || data.length < 2) return;
+                    const stats = data.slice(1);
+                    const total = stats.reduce((a,b) => a + (parseInt(b[1])||0), 0);
+                    document.getElementById(id).innerHTML = stats.map(r => `<div class="stat-row"><div class="stat-label"><span>${r[0]}</span><span>${r[1]}</span></div><div class="bar-bg"><div class="bar-fill ${r[0].toLowerCase().includes('jan')?'jan-bar':'phoadse-bar'}" style="width:${total?(r[1]/total*100):0}%"></div></div></div>`).join('');
+                };
+                renderBarUI('death-bars', json.stats.deaths);
+                renderBarUI('wipeout-bars', json.stats.wipeouts);
+
                 bar.style.width = "100%";
                 setTimeout(() => bar.style.width = "0%", 1000);
             } catch (e) { console.error(e); bar.style.backgroundColor = "red"; }
@@ -270,12 +261,12 @@
         async function init() {
             try {
                 const r = await fetch('pokemon_with_types.json?v=' + Date.now());
-                const m = await r.json();
-                const data = m.pokemon ? m.pokemon : m;
-                for (let k in data) { pokemonMap[superClean(k)] = data[k]; }
-                await update();
+                const d = await r.json();
+                const m = d.pokemon || d;
+                for (let k in m) pokemonMap[superClean(k)] = m[k];
+                await update(); 
                 setInterval(update, 30000);
-            } catch (err) { console.error(err); }
+            } catch (e) { console.error(e); }
         }
         init();
     </script>
