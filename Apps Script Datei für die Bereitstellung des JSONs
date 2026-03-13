@@ -1,0 +1,24 @@
+function doGet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheets()[0];
+  
+  // 1. Die normale Tabelle (Paare)
+  const data = sheet.getDataRange().getValues();
+  
+  // 2. Wipeout Daten (H3:I5)
+  const wipeouts = sheet.getRange("H3:I5").getValues();
+  
+  // 3. Death Counter (H14:I16)
+  const deaths = sheet.getRange("H14:I16").getValues();
+  
+  const result = {
+    pairs: data,
+    stats: {
+      wipeouts: wipeouts,
+      deaths: deaths
+    }
+  };
+  
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
