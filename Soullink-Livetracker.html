@@ -187,48 +187,51 @@
         }
 
         function calculateRadar(teamTypeStrings) {
-            let weak = {}; let res = {};
-            
-            teamTypeStrings.forEach(s => {
-                const types = s.split(/[\s/]+/).map(t => {
-                    let ct = superClean(t);
-                    return (ct === 'käfer' || ct === 'kaefer') ? 'kaefer' : ct;
-                }).filter(t => typeChart[t]);
-
-                Object.keys(typeChart).forEach(attackingType => {
-                    let multiplier = 1.0;
-                    types.forEach(defendingType => {
-                        if (typeChart[defendingType].weak.includes(attackingType)) multiplier *= 2.0;
-                        if (typeChart[defendingType].res.includes(attackingType)) multiplier *= 0.5;
-                        if (typeChart[defendingType].imm.includes(attackingType)) multiplier *= 0.0;
-                    });
-
-                    if (multiplier === 4.0) weak[attackingType] = (weak[attackingType] || 0) + 2;
-                    else if (multiplier === 2.0) weak[attackingType] = (weak[attackingType] || 0) + 1;
-                    
-                    if (multiplier < 1.0 && multiplier > 0) res[attackingType] = (res[attackingType] || 0) + 1;
-                    if (multiplier === 0) res[attackingType] = (res[attackingType] || 0) + 100; // Echte Immunität Marker
+        let weak = {}; let res = {};
+        
+        teamTypeStrings.forEach(s => {
+            const types = s.split(/[\s/]+/).map(t => {
+                let ct = superClean(t);
+                return (ct === 'käfer' || ct === 'kaefer') ? 'kaefer' : ct;
+            }).filter(t => typeChart[t]);
+    
+            Object.keys(typeChart).forEach(attackingType => {
+                let multiplier = 1.0;
+                types.forEach(defendingType => {
+                    if (typeChart[defendingType].weak.includes(attackingType)) multiplier *= 2.0;
+                    if (typeChart[defendingType].res.includes(attackingType)) multiplier *= 0.5;
+                    if (typeChart[defendingType].imm.includes(attackingType)) multiplier *= 0.0;
                 });
+    
+                if (multiplier === 4.0) weak[attackingType] = (weak[attackingType] || 0) + 2;
+                else if (multiplier === 2.0) weak[attackingType] = (weak[attackingType] || 0) + 1;
+                
+                // Logik-Fix: Immunitäten (100) und Resistenzen (1) strikt trennen
+                if (multiplier === 0) {
+                    res[attackingType] = (res[attackingType] || 0) + 100;
+                } else if (multiplier < 1.0) {
+                    res[attackingType] = (res[attackingType] || 0) + 1;
+                }
             });
-
-            const render = (data, min, cl, isRes) => Object.entries(data)
-                .filter(e => e[1] >= min)
-                .sort((a,b) => b[1]-a[1])
-                .map(e => {
-                    const isImmunity = isRes && e[1] >= 100;
-                    const immClass = isImmunity ? 'immunity-chip' : '';
-                    const shield = isImmunity ? '🛡️ ' : '';
-                    
-                    // Wenn Immunität vorhanden: Zeige nur die Anzahl der Immunitäten (z.B. 1x)
-                    // Wenn keine Immunität: Zeige die normale Summe der Resistenzen
-                    const count = isImmunity ? Math.floor(e[1] / 100) : e[1];
-                    
-                    return `<div class="radar-chip ${cl} ${immClass}">${shield}<img src="types/${e[0]}.png" height="10"> ${count}x</div>`;
-                }).join('');
-
-            document.getElementById('weakness-radar').innerHTML = render(weak, 3, 'weak-warning', false) || "Keine kritischen Schwächen.";
-            document.getElementById('resistance-radar').innerHTML = render(res, 1, 'res-info', true) || "Keine Resistenzen.";
-        }
+        });
+    
+        const render = (data, min, cl, isRes) => Object.entries(data)
+            .filter(e => e[1] >= min)
+            .sort((a,b) => b[1]-a[1])
+            .map(e => {
+                const isImmunity = isRes && e[1] >= 100;
+                const immClass = isImmunity ? 'immunity-chip' : '';
+                const shield = isImmunity ? '🛡️ ' : '';
+                
+                // Anzeige-Fix: Bei Immunität zeigen wir NUR die Anzahl der immunen Pokémon
+                const count = isImmunity ? Math.floor(e[1] / 100) : e[1];
+                
+                return `<div class="radar-chip ${cl} ${immClass}">${shield}<img src="types/${e[0]}.png" height="10"> ${count}x</div>`;
+            }).join('');
+    
+        document.getElementById('weakness-radar').innerHTML = render(weak, 3, 'weak-warning', false) || "Keine kritischen Schwächen.";
+        document.getElementById('resistance-radar').innerHTML = render(res, 1, 'res-info', true) || "Keine Resistenzen.";
+    }
 
         async function update() {
             const bar = document.getElementById('loading-bar');
@@ -316,4 +319,5 @@
     </script>
 </body>
 </html>
+
 
