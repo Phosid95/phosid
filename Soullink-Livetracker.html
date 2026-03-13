@@ -13,7 +13,7 @@
             --color-phoadse: #ffffff;
             --danger: #ff4444;
             --success: #00c851;
-            --gold: #ffd700; /* Neue Gold-Variable */
+            --gold: #ffd700;
         }
 
         body { background: var(--bg); color: white; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding-bottom: 50px; }
@@ -62,7 +62,6 @@
         .user-tag { font-size: 0.6em; color: #777; margin-bottom: 4px; text-transform: uppercase; }
         .link-icon { color: #ff4444; font-size: 1.2em; }
 
-        /* Stats & Radar */
         .stats-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1200px; margin: 0 auto; }
         .stats-container { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; flex: 1; min-width: 320px; }
         .stat-row { margin-bottom: 20px; }
@@ -77,13 +76,11 @@
         .weak-warning { background: rgba(255, 68, 68, 0.2); border-color: var(--danger); color: #ff8888; }
         .res-info { background: rgba(0, 200, 81, 0.1); border-color: var(--success); color: #88ff88; }
 
-        /* NEU: Gold-Effekt für echte Immunitäten */
         .immunity-chip { 
             border: 1px solid var(--gold) !important; 
             background: rgba(255, 215, 0, 0.1) !important; 
             color: var(--gold) !important;
             box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
-            position: relative;
         }
 
         #type-distribution { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
@@ -111,12 +108,12 @@
     </div>
 
     <div id="stats" class="page">
-        <h1>Statisiken</h1>
+        <h1>Statistiken</h1>
         <div class="stats-grid">
             <div class="stats-container" style="flex-basis: 100%;">
                 <h3>🚨 Schwächen-Radar (Gefahr ab 3x)</h3>
                 <div id="weakness-radar" class="radar-box">Berechne...</div>
-                <h3 style="margin-top:20px;">🛡️ Team-Resistenzen</h3>
+                <h3 style="margin-top:20px;">🛡️ Team-Resistenzen & Immunitäten</h3>
                 <div id="resistance-radar" class="radar-box">Berechne...</div>
             </div>
             <div class="stats-container"><h3>📊 Typen-Verteilung</h3><div id="type-distribution"></div></div>
@@ -186,7 +183,6 @@
             }).join('');
         }
 
-        // --- KORRIGIERTE RADAR FUNKTION ---
         function calculateRadar(teamTypeStrings) {
             let weak = {}; 
             let res = {}; 
@@ -240,54 +236,6 @@
             document.getElementById('weakness-radar').innerHTML = weakHTML || "Keine kritischen Schwächen.";
             document.getElementById('resistance-radar').innerHTML = resHTML || "Keine Resistenzen.";
         }
-        
-            // Hilfsfunktion zum Rendern der Chips
-            const renderChip = (type, count, cl, isImm) => {
-                const immClass = isImm ? 'immunity-chip' : '';
-                const shield = isImm ? '🛡️ ' : '';
-                return `<div class="radar-chip ${cl} ${immClass}">${shield}<img src="types/${type}.png" height="10"> ${count}x</div>`;
-            };
-        
-            // Wir kombinieren Immunitäten und Resistenzen für die Anzeige
-            let resHTML = "";
-            
-            // Zuerst alle Immunitäten (Gold)
-            Object.entries(imm).sort((a,b) => b[1]-a[1]).forEach(([type, count]) => {
-                resHTML += renderChip(type, count, 'res-info', true);
-            });
-            
-            // Dann alle normalen Resistenzen (Grün)
-            Object.entries(res).sort((a,b) => b[1]-a[1]).forEach(([type, count]) => {
-                resHTML += renderChip(type, count, 'res-info', false);
-            });
-        
-            const weakHTML = Object.entries(weak)
-                .filter(e => e[1] >= 3)
-                .sort((a,b) => b[1]-a[1])
-                .map(e => renderChip(e[0], e[1], 'weak-warning', false))
-                .join('');
-        
-            document.getElementById('weakness-radar').innerHTML = weakHTML || "Keine kritischen Schwächen.";
-            document.getElementById('resistance-radar').innerHTML = resHTML || "Keine Resistenzen.";
-        }
-    
-        const render = (data, min, cl, isRes) => Object.entries(data)
-            .filter(e => e[1] >= min)
-            .sort((a,b) => b[1]-a[1])
-            .map(e => {
-                const isImmunity = isRes && e[1] >= 100;
-                const immClass = isImmunity ? 'immunity-chip' : '';
-                const shield = isImmunity ? '🛡️ ' : '';
-                
-                // Anzeige-Fix: Bei Immunität zeigen wir NUR die Anzahl der immunen Pokémon
-                const count = isImmunity ? Math.floor(e[1] / 100) : e[1];
-                
-                return `<div class="radar-chip ${cl} ${immClass}">${shield}<img src="types/${e[0]}.png" height="10"> ${count}x</div>`;
-            }).join('');
-    
-        document.getElementById('weakness-radar').innerHTML = render(weak, 3, 'weak-warning', false) || "Keine kritischen Schwächen.";
-        document.getElementById('resistance-radar').innerHTML = render(res, 1, 'res-info', true) || "Keine Resistenzen.";
-    }
 
         async function update() {
             const bar = document.getElementById('loading-bar');
@@ -344,6 +292,7 @@
                 document.getElementById('last-update').innerText = "Sync: " + new Date().toLocaleTimeString();
                 
                 calculateRadar(activeTypes);
+                
                 const sortedTypes = Object.entries(typeCounts).sort((a,b) => b[1]-a[1]);
                 document.getElementById('type-distribution').innerHTML = sortedTypes.map(e => `<div class="type-stat-card" style="border-left-color: ${typeColors[e[0]] || '#555'}"><img src="types/${e[0]}.png" class="type-icon"> <b style="color:${typeColors[e[0]]}">${e[1]}x</b></div>`).join('') || "Keine Daten.";
                 
@@ -375,7 +324,3 @@
     </script>
 </body>
 </html>
-
-
-
-
