@@ -152,7 +152,10 @@
             btn.classList.add('active');
         }
 
-        function superClean(str) { return String(str).toLowerCase().trim().replace(/[\s\t\n\r]/g, '').replace('ä','kaefer'); }
+        // 1. superClean wieder neutral machen (nur Leerzeichen/Kleinbuchstaben)
+        function superClean(str) { 
+            return String(str).toLowerCase().trim().replace(/[\s\t\n\r]/g, ''); 
+        }
 
         function handleImgError(imgElement, enName) {
             if (imgElement.src.includes('black-white')) {
@@ -165,10 +168,12 @@
             }
         }
 
+        // 2. Die Käfer-Logik gezielt beim Mapping und Icon-Abruf anwenden
         function getTypeIconsHTML(typeString) {
             if (!typeString || typeString === "???" || typeString === "Unbekannt") return "";
             return typeString.split(/[\s/]+/).filter(t => t.length > 0).map(t => {
-                const ct = superClean(t);
+                let ct = superClean(t);
+                if (ct === 'käfer' || ct === 'kaefer') ct = 'kaefer'; // Eindeutige Zuweisung
                 return `<img src="types/${ct}.png" class="type-icon" onerror="this.style.display='none'">`;
             }).join('');
         }
@@ -217,7 +222,11 @@
                         
                         if(alive && info.type !== "???") {
                             activeTypes.push(info.type);
-                            info.type.split(/[\s/]+/).forEach(t => { const ct = superClean(t); typeCounts[ct] = (typeCounts[ct] || 0) + 1; });
+                            info.type.split(/[\s/]+/).forEach(t => { 
+                            let ct = superClean(t); 
+                            if (ct === 'käfer' || ct === 'kaefer') ct = 'kaefer';
+                            typeCounts[ct] = (typeCounts[ct] || 0) + 1; 
+                            });
                         }
 
                         slots += `
@@ -272,4 +281,5 @@
     </script>
 </body>
 </html>
+
 
