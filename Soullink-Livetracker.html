@@ -180,17 +180,34 @@
 
         function calculateRadar(teamTypeStrings) {
             let weak = {}; let res = {};
+            
             teamTypeStrings.forEach(s => {
-                s.split(/[\s/]+/).forEach(t => {
-                    const ct = superClean(t);
-                    if(typeChart[ct]) {
-                        typeChart[ct].weak.forEach(w => weak[w] = (weak[w] || 0) + 1);
-                        typeChart[ct].res.forEach(r => res[r] = (res[r] || 0) + 1);
-                        typeChart[ct].imm.forEach(i => res[i] = (res[i] || 0) + 1);
-                    }
+                const types = s.split(/[\s/]+/).map(t => {
+                    let ct = superClean(t);
+                    return (ct === 'käfer' || ct === 'kaefer') ? 'kaefer' : ct;
+                }).filter(t => typeChart[t]);
+        
+                // Wir prüfen für jeden der 18 Typen, wie effektiv er gegen dieses Pokémon ist
+                Object.keys(typeChart).forEach(attackingType => {
+                    let multiplier = 1.0;
+                    
+                    types.forEach(defendingType => {
+                        if (typeChart[defendingType].weak.includes(attackingType)) multiplier *= 2.0;
+                        if (typeChart[defendingType].res.includes(attackingType)) multiplier *= 0.5;
+                        if (typeChart[defendingType].imm.includes(attackingType)) multiplier *= 0.0;
+                    });
+        
+                    if (multiplier > 1) weak[attackingType] = (weak[attackingType] || 0) + 1;
+                    if (multiplier < 1) res[attackingType] = (res[attackingType] || 0) + 1;
                 });
             });
-            const render = (data, min, cl) => Object.entries(data).filter(e => e[1] >= min).sort((a,b) => b[1]-a[1]).map(e => `<div class="radar-chip ${cl}"><img src="types/${e[0]}.png" height="10"> ${e[1]}x</div>`).join('');
+        
+            const render = (data, min, cl) => Object.entries(data)
+                .filter(e => e[1] >= min)
+                .sort((a,b) => b[1]-a[1])
+                .map(e => `<div class="radar-chip ${cl}"><img src="types/${e[0]}.png" height="10"> ${e[1]}x</div>`)
+                .join('');
+        
             document.getElementById('weakness-radar').innerHTML = render(weak, 3, 'weak-warning') || "Keine kritischen Schwächen.";
             document.getElementById('resistance-radar').innerHTML = render(res, 1, 'res-info') || "Keine Resistenzen.";
         }
@@ -281,5 +298,6 @@
     </script>
 </body>
 </html>
+
 
 
