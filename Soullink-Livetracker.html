@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soullink Pro Tracker & Stats</title>
+    <title>Soullink Pro Tracker v30</title>
     <style>
         :root { 
             --primary: #ffcb05; 
@@ -11,6 +11,7 @@
             --card: #1e1e1e; 
             --color-jan: #ff4444; 
             --color-phoadse: #ffffff;
+            --dead: #444;
         }
 
         body { 
@@ -21,13 +22,13 @@
 
         nav { 
             background: #222; padding: 10px; position: sticky; top: 0; 
-            z-index: 2000; display: flex; justify-content: center; gap: 15px; 
+            z-index: 2000; display: flex; justify-content: center; gap: 10px; 
             box-shadow: 0 2px 10px rgba(0,0,0,0.5);
         }
         nav button { 
-            background: #333; border: none; color: white; padding: 10px 25px; 
+            background: #333; border: none; color: white; padding: 10px 20px; 
             border-radius: 25px; cursor: pointer; transition: 0.3s; 
-            font-weight: bold; text-transform: uppercase; font-size: 0.85em;
+            font-weight: bold; text-transform: uppercase; font-size: 0.8em;
         }
         nav button.active { background: var(--primary); color: black; }
 
@@ -41,23 +42,33 @@
         h1 { color: var(--primary); text-shadow: 2px 2px #3b4cca; margin-bottom: 5px; text-align: center; }
         .update-info { font-size: 0.75em; color: #888; margin-bottom: 20px; text-align: center; }
 
-        #dashboard { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1400px; margin: 0 auto; }
-        .card { background: var(--card); border: 2px solid #333; border-radius: 12px; overflow: hidden; width: 420px; }
+        #dashboard, #graveyard-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1400px; margin: 0 auto; }
+        
+        /* Karten-Styling */
+        .card { background: var(--card); border: 2px solid #333; border-radius: 12px; overflow: hidden; width: 420px; transition: 0.3s; }
         .route-header { background: #2a2a2a; padding: 8px; font-size: 0.7em; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #333; color: #999; }
         .card-content { padding: 15px; }
         .pair { display: flex; justify-content: space-between; align-items: center; gap: 5px; }
         .slot { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; }
         
+        /* Sprites & Links */
         .poke-link { transition: transform 0.2s; display: inline-block; }
-        .poke-link:hover { transform: scale(1.1); filter: drop-shadow(0 0 10px var(--primary)); }
-        .slot img.poke-sprite { width: 70px; height: 70px; object-fit: contain; margin-bottom: 5px; cursor: pointer; }
+        .poke-link:hover { transform: scale(1.1); }
+        .slot img.poke-sprite { width: 70px; height: 70px; object-fit: contain; margin-bottom: 5px; }
         
+        /* Friedhof Spezial-Effekt */
+        .dead-card { border-color: #222; filter: grayscale(0.6); opacity: 0.8; }
+        .dead-card .poke-sprite { filter: grayscale(1) brightness(0.7); }
+        .dead-card .name { color: #888 !important; text-decoration: line-through; }
+        .dead-card .route-header { background: #1a1a1a; color: #555; }
+
         .name { font-weight: bold; color: var(--primary); font-size: 0.95em; margin: 2px 0; }
         .type-container { display: flex; justify-content: center; gap: 4px; height: 14px; margin-top: 4px; }
         .type-icon { height: 14px !important; width: auto; }
         .user-tag { font-size: 0.6em; color: #777; margin-bottom: 4px; text-transform: uppercase; }
         .link-icon { color: #ff4444; font-size: 1.2em; }
 
+        /* Stats */
         .stats-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1200px; margin: 0 auto; }
         .stats-container { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; flex: 1; min-width: 320px; }
         .stat-row { margin-bottom: 20px; }
@@ -76,15 +87,21 @@
 <body>
 
     <nav>
-        <button onclick="showPage('tracker', this)" class="active">Live-Tracker</button>
-        <button onclick="showPage('stats', this)">Statistiken</button>
+        <button onclick="showPage('tracker', this)" class="active">Team</button>
+        <button onclick="showPage('graveyard', this)">Friedhof 💀</button>
+        <button onclick="showPage('stats', this)">Stats</button>
     </nav>
     <div id="loading-bar-container"><div id="loading-bar"></div></div>
 
     <div id="tracker" class="page active">
-        <h1>Soullink Tracker</h1>
-        <div id="last-update" class="update-info">Initialisiere Sync...</div>
-        <div id="dashboard">Lade Pokémon-Daten...</div>
+        <h1>Aktives Team</h1>
+        <div id="last-update" class="update-info">Sync läuft...</div>
+        <div id="dashboard">Lade Pokémon...</div>
+    </div>
+
+    <div id="graveyard" class="page">
+        <h1>Gefallene Helden</h1>
+        <div id="graveyard-list">In diesem Run gab es noch keine Verluste.</div>
     </div>
 
     <div id="stats" class="page">
@@ -108,8 +125,8 @@
             normal: "#A8A77A", feuer: "#EE8130", wasser: "#6390F0", elektro: "#F7D02C", 
             pflanze: "#7AC74C", eis: "#96D9D6", kampf: "#C22E28", gift: "#A33EA1", 
             boden: "#E2BF65", flug: "#A98FF3", psycho: "#F95587", kaefer: "#A6B91A", 
-            käfer: "#A6B91A", gestein: "#B6A136", geist: "#735797", drache: "#6F35FC", 
-            unlicht: "#705746", stahl: "#B7B7CE", fee: "#D685AD"
+            gestein: "#B6A136", geist: "#735797", drache: "#6F35FC", unlicht: "#705746", 
+            stahl: "#B7B7CE", fee: "#D685AD"
         };
 
         function showPage(id, btn) {
@@ -154,7 +171,8 @@
             const statusIdx = pairsData[0].findIndex(c => String(c).toUpperCase().includes("GÜLTIG"));
             for (let i = 1; i < pairsData.length; i++) {
                 const row = pairsData[i];
-                if (row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE') {
+                const isAlive = (row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE');
+                if (isAlive && row[1]) {
                     [row[1], row[2]].forEach(name => {
                         const info = pokemonMap[superClean(name)];
                         if (info && info.type) {
@@ -202,41 +220,50 @@
                 for(let col=1; col < statusIdx; col++) if(pairsData[0][col]) playerNames.push(pairsData[0][col]);
 
                 let trackerHtml = "";
+                let graveyardHtml = "";
+
                 for (let i = 1; i < pairsData.length; i++) {
                     const row = pairsData[i];
-                    if ((row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE') && row[1]) {
-                        let slots = "";
-                        for (let p=0; p < playerNames.length; p++) {
-                            const rawName = String(row[p+1]).trim();
-                            const pInfo = pokemonMap[superClean(rawName)] || { en: rawName, type: "???" };
-                            const imgName = pInfo.en.toLowerCase().replace(/\s+/g, '-').replace('♀','-f').replace('♂','-m');
-                            
-                            // WIKI LOGIK: Leerzeichen durch Bindestrich ersetzen (PokéWiki Standard)
-                            const wikiUrl = `https://www.pokewiki.de/${rawName.replace(/\s+/g, '-')}`;
+                    if (!row[1]) continue;
 
-                            slots += `
-                                <div class="slot">
-                                    <div class="user-tag">${playerNames[p]}</div>
-                                    <a href="${wikiUrl}" target="_blank" class="poke-link" title="${rawName} im PokéWiki nachschlagen">
-                                        <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${imgName}.gif" class="poke-sprite" onerror="handleImgError(this, '${imgName}')">
-                                    </a>
-                                    <div class="name">${rawName}</div>
-                                    <div class="type-container">${getTypeIconsHTML(pInfo.type)}</div>
-                                </div>
-                                ${p < playerNames.length - 1 ? '<div class="link-icon">🔗</div>' : ''}
-                            `;
-                        }
-                        trackerHtml += `<div class="card"><div class="route-header">${row[0]}</div><div class="card-content"><div class="pair">${slots}</div></div></div>`;
+                    const isAlive = (row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE');
+                    
+                    let slots = "";
+                    for (let p=0; p < playerNames.length; p++) {
+                        const rawName = String(row[p+1]).trim();
+                        const pInfo = pokemonMap[superClean(rawName)] || { en: rawName, type: "???" };
+                        const imgName = pInfo.en.toLowerCase().replace(/\s+/g, '-').replace('♀','-f').replace('♂','-m');
+                        const wikiUrl = `https://www.pokewiki.de/${rawName.replace(/\s+/g, '-')}`;
+
+                        slots += `
+                            <div class="slot">
+                                <div class="user-tag">${playerNames[p]}</div>
+                                <a href="${wikiUrl}" target="_blank" class="poke-link" title="${rawName} Wiki">
+                                    <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${imgName}.gif" class="poke-sprite" onerror="handleImgError(this, '${imgName}')">
+                                </a>
+                                <div class="name">${rawName}</div>
+                                <div class="type-container">${getTypeIconsHTML(pInfo.type)}</div>
+                            </div>
+                            ${p < playerNames.length - 1 ? '<div class="link-icon">🔗</div>' : ''}
+                        `;
                     }
+
+                    const cardHtml = `<div class="card ${isAlive ? '' : 'dead-card'}"><div class="route-header">${row[0]}</div><div class="card-content"><div class="pair">${slots}</div></div></div>`;
+                    
+                    if (isAlive) trackerHtml += cardHtml;
+                    else graveyardHtml += cardHtml;
                 }
-                document.getElementById('dashboard').innerHTML = trackerHtml || "<p>Keine Daten.</p>";
+
+                document.getElementById('dashboard').innerHTML = trackerHtml || "<p>Keine aktiven Pokémon.</p>";
+                document.getElementById('graveyard-list').innerHTML = graveyardHtml || "<p>Noch keine Verluste! Stark!</p>";
                 document.getElementById('last-update').innerText = "Sync: " + new Date().toLocaleTimeString();
+                
                 renderBars('death-bars', json.stats.deaths);
                 renderBars('wipeout-bars', json.stats.wipeouts);
                 renderTypeStats(pairsData);
                 
                 bar.style.width = "100%";
-                setTimeout(() => { bar.style.width = "0%"; }, 1000);
+                setTimeout(() => bar.style.width = "0%", 1000);
             } catch (e) { console.error(e); bar.style.backgroundColor = "red"; }
         }
 
@@ -254,4 +281,3 @@
     </script>
 </body>
 </html>
-
