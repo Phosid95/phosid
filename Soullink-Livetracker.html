@@ -5,80 +5,90 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Soullink Pro Tracker v33</title>
     <style>
-        :root { 
-            --primary: #ffcb05; 
-            --bg: #121212; 
-            --card: #1e1e1e; 
-            --color-jan: #ff4444; 
-            --color-phoadse: #ffffff;
-            --danger: #ff4444;
-            --success: #00c851;
-        }
+    :root { 
+        --primary: #ffcb05; 
+        --bg: #121212; 
+        --card: #1e1e1e; 
+        --color-jan: #ff4444; 
+        --color-phoadse: #ffffff;
+        --danger: #ff4444;
+        --success: #00c851;
+        --gold: #ffd700; /* Neue Gold-Variable */
+    }
 
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding-bottom: 50px; }
-        
-        nav { 
-            background: #222; padding: 10px; position: sticky; top: 0; 
-            z-index: 2000; display: flex; justify-content: center; gap: 10px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-        }
-        nav button { 
-            background: #333; border: none; color: white; padding: 10px 20px; 
-            border-radius: 25px; cursor: pointer; transition: 0.3s; 
-            font-weight: bold; text-transform: uppercase; font-size: 0.8em;
-        }
-        nav button.active { background: var(--primary); color: black; }
+    body { background: var(--bg); color: white; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding-bottom: 50px; }
+    
+    nav { 
+        background: #222; padding: 10px; position: sticky; top: 0; 
+        z-index: 2000; display: flex; justify-content: center; gap: 10px; 
+        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    nav button { 
+        background: #333; border: none; color: white; padding: 10px 20px; 
+        border-radius: 25px; cursor: pointer; transition: 0.3s; 
+        font-weight: bold; text-transform: uppercase; font-size: 0.8em;
+    }
+    nav button.active { background: var(--primary); color: black; }
 
-        #loading-bar-container { width: 100%; height: 3px; background: #222; position: sticky; top: 52px; z-index: 1999; }
-        #loading-bar { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
+    #loading-bar-container { width: 100%; height: 3px; background: #222; position: sticky; top: 52px; z-index: 1999; }
+    #loading-bar { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
 
-        .page { display: none; padding: 20px; animation: fadeIn 0.4s ease-in; }
-        .page.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .page { display: none; padding: 20px; animation: fadeIn 0.4s ease-in; }
+    .page.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        h1 { color: var(--primary); text-shadow: 2px 2px #3b4cca; margin-bottom: 5px; text-align: center; }
-        .update-info { font-size: 0.75em; color: #888; margin-bottom: 20px; text-align: center; }
+    h1 { color: var(--primary); text-shadow: 2px 2px #3b4cca; margin-bottom: 5px; text-align: center; }
+    .update-info { font-size: 0.75em; color: #888; margin-bottom: 20px; text-align: center; }
 
-        #dashboard, #graveyard-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1400px; margin: 0 auto; }
-        
-        .card { background: var(--card); border: 2px solid #333; border-radius: 12px; overflow: hidden; width: 420px; transition: 0.3s; }
-        .route-header { background: #2a2a2a; padding: 8px; font-size: 0.7em; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #333; color: #999; }
-        .card-content { padding: 15px; }
-        .pair { display: flex; justify-content: space-between; align-items: center; gap: 5px; }
-        .slot { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; }
-        
-        .poke-link { transition: transform 0.2s; display: inline-block; }
-        .poke-link:hover { transform: scale(1.1); filter: drop-shadow(0 0 8px var(--primary)); }
-        .slot img.poke-sprite { width: 70px; height: 70px; object-fit: contain; margin-bottom: 5px; }
-        
-        .dead-card { border-color: #222; filter: grayscale(0.7); opacity: 0.7; }
-        .dead-card .poke-sprite { filter: grayscale(1) brightness(0.7); }
-        .dead-card .name { color: #888 !important; text-decoration: line-through; }
+    #dashboard, #graveyard-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1400px; margin: 0 auto; }
+    
+    .card { background: var(--card); border: 2px solid #333; border-radius: 12px; overflow: hidden; width: 420px; transition: 0.3s; }
+    .route-header { background: #2a2a2a; padding: 8px; font-size: 0.7em; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #333; color: #999; }
+    .card-content { padding: 15px; }
+    .pair { display: flex; justify-content: space-between; align-items: center; gap: 5px; }
+    .slot { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; }
+    
+    .poke-link { transition: transform 0.2s; display: inline-block; }
+    .poke-link:hover { transform: scale(1.1); filter: drop-shadow(0 0 8px var(--primary)); }
+    .slot img.poke-sprite { width: 70px; height: 70px; object-fit: contain; margin-bottom: 5px; }
+    
+    .dead-card { border-color: #222; filter: grayscale(0.7); opacity: 0.7; }
+    .dead-card .poke-sprite { filter: grayscale(1) brightness(0.7); }
+    .dead-card .name { color: #888 !important; text-decoration: line-through; }
 
-        .name { font-weight: bold; color: var(--primary); font-size: 0.95em; margin: 2px 0; }
-        .type-container { display: flex; justify-content: center; gap: 4px; height: 14px; margin-top: 4px; }
-        .type-icon { height: 14px !important; width: auto; }
-        .user-tag { font-size: 0.6em; color: #777; margin-bottom: 4px; text-transform: uppercase; }
-        .link-icon { color: #ff4444; font-size: 1.2em; }
+    .name { font-weight: bold; color: var(--primary); font-size: 0.95em; margin: 2px 0; }
+    .type-container { display: flex; justify-content: center; gap: 4px; height: 14px; margin-top: 4px; }
+    .type-icon { height: 14px !important; width: auto; }
+    .user-tag { font-size: 0.6em; color: #777; margin-bottom: 4px; text-transform: uppercase; }
+    .link-icon { color: #ff4444; font-size: 1.2em; }
 
-        /* Stats & Radar */
-        .stats-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1200px; margin: 0 auto; }
-        .stats-container { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; flex: 1; min-width: 320px; }
-        .stat-row { margin-bottom: 20px; }
-        .stat-label { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; font-size: 0.85em; }
-        .bar-bg { background: #111; height: 25px; border-radius: 4px; overflow: hidden; }
-        .bar-fill { height: 100%; transition: width 1s; }
-        .jan-bar { background: linear-gradient(90deg, #cc0000, #ff4444); }
-        .phoadse-bar { background: linear-gradient(90deg, #999, #fff); }
+    /* Stats & Radar */
+    .stats-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1200px; margin: 0 auto; }
+    .stats-container { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; flex: 1; min-width: 320px; }
+    .stat-row { margin-bottom: 20px; }
+    .stat-label { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; font-size: 0.85em; }
+    .bar-bg { background: #111; height: 25px; border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; transition: width 1s; }
+    .jan-bar { background: linear-gradient(90deg, #cc0000, #ff4444); }
+    .phoadse-bar { background: linear-gradient(90deg, #999, #fff); }
 
-        .radar-box { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
-        .radar-chip { padding: 5px 10px; border-radius: 4px; font-size: 0.75em; font-weight: bold; display: flex; align-items: center; gap: 5px; border: 1px solid rgba(255,255,255,0.1); }
-        .weak-warning { background: rgba(255, 68, 68, 0.2); border-color: var(--danger); color: #ff8888; }
-        .res-info { background: rgba(0, 200, 81, 0.1); border-color: var(--success); color: #88ff88; }
+    .radar-box { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .radar-chip { padding: 5px 10px; border-radius: 4px; font-size: 0.75em; font-weight: bold; display: flex; align-items: center; gap: 5px; border: 1px solid rgba(255,255,255,0.1); }
+    .weak-warning { background: rgba(255, 68, 68, 0.2); border-color: var(--danger); color: #ff8888; }
+    .res-info { background: rgba(0, 200, 81, 0.1); border-color: var(--success); color: #88ff88; }
 
-        #type-distribution { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
-        .type-stat-card { background: rgba(255,255,255,0.03); border-left: 4px solid #555; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
-    </style>
+    /* NEU: Gold-Effekt für Immunitäten */
+    .immunity-chip { 
+        border: 1px solid var(--gold) !important; 
+        background: rgba(255, 215, 0, 0.1) !important; 
+        color: var(--gold) !important;
+        box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+        position: relative;
+    }
+
+    #type-distribution { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
+    .type-stat-card { background: rgba(255,255,255,0.03); border-left: 4px solid #555; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+</style>
 </head>
 <body>
 
@@ -209,14 +219,11 @@
                 .filter(e => e[1] >= min)
                 .sort((a,b) => b[1]-a[1])
                 .map(e => {
-                    // Spezial-Style für Immunitäten (wenn der Wert hoch ist oder es ein spezifischer Typ ist)
-                    const isImmunity = isRes && e[1] >= 2; 
-                    const extraStyle = isImmunity ? 'border: 1px solid gold; box-shadow: 0 0 5px gold;' : '';
-                    const icon = isImmunity ? '🛡️ ' : '';
-                    
-                    return `<div class="radar-chip ${cl}" style="${extraStyle}">${icon}<img src="types/${e[0]}.png" height="10"> ${e[1]}x</div>`;
-                })
-                .join('');
+                    // Wenn es eine Immunität ist (Wert >= 2 bei Resistenzen), füge die goldene Klasse hinzu
+                    const immClass = (isRes && e[1] >= 2) ? 'immunity-chip' : '';
+                    const shield = immClass ? '🛡️ ' : '';
+                    return `<div class="radar-chip ${cl} ${immClass}">${shield}<img src="types/${e[0]}.png" height="10"> ${e[1]}x</div>`;
+                }).join('');
             
             document.getElementById('weakness-radar').innerHTML = render(weak, 3, 'weak-warning', false) || "Keine kritischen Schwächen.";
             document.getElementById('resistance-radar').innerHTML = render(res, 1, 'res-info', true) || "Keine Resistenzen.";
@@ -308,6 +315,7 @@
     </script>
 </body>
 </html>
+
 
 
 
