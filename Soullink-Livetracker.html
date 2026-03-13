@@ -187,18 +187,21 @@
                     return (ct === 'käfer' || ct === 'kaefer') ? 'kaefer' : ct;
                 }).filter(t => typeChart[t]);
         
-                // Wir prüfen für jeden der 18 Typen, wie effektiv er gegen dieses Pokémon ist
+                // Wir prüfen die Anfälligkeit des gesamten Pokémon (Dual-Typ Check)
                 Object.keys(typeChart).forEach(attackingType => {
                     let multiplier = 1.0;
-                    
                     types.forEach(defendingType => {
                         if (typeChart[defendingType].weak.includes(attackingType)) multiplier *= 2.0;
                         if (typeChart[defendingType].res.includes(attackingType)) multiplier *= 0.5;
                         if (typeChart[defendingType].imm.includes(attackingType)) multiplier *= 0.0;
                     });
         
-                    if (multiplier > 1) weak[attackingType] = (weak[attackingType] || 0) + 1;
-                    if (multiplier < 1) res[attackingType] = (res[attackingType] || 0) + 1;
+                    // Wenn Kabuto 4x Pflanze-Schwäche hat, zählt das hier als 2 "Punkte" für den Radar
+                    if (multiplier === 4.0) weak[attackingType] = (weak[attackingType] || 0) + 2;
+                    else if (multiplier === 2.0) weak[attackingType] = (weak[attackingType] || 0) + 1;
+                    
+                    if (multiplier < 1.0 && multiplier > 0) res[attackingType] = (res[attackingType] || 0) + 1;
+                    if (multiplier === 0) res[attackingType] = (res[attackingType] || 0) + 2; // Immunität ist wertvoll!
                 });
             });
         
@@ -298,6 +301,7 @@
     </script>
 </body>
 </html>
+
 
 
 
