@@ -186,17 +186,18 @@
             }).join('');
         }
 
+        // --- KORRIGIERTE RADAR FUNKTION ---
         function calculateRadar(teamTypeStrings) {
             let weak = {}; 
             let res = {}; 
-            let imm = {}; // Neues Objekt nur für Immunitäten
+            let imm = {}; 
             
             teamTypeStrings.forEach(s => {
                 const types = s.split(/[\s/]+/).map(t => {
                     let ct = superClean(t);
                     return (ct === 'käfer' || ct === 'kaefer') ? 'kaefer' : ct;
                 }).filter(t => typeChart[t]);
-        
+
                 Object.keys(typeChart).forEach(attackingType => {
                     let multiplier = 1.0;
                     types.forEach(defendingType => {
@@ -204,21 +205,41 @@
                         if (typeChart[defendingType].res.includes(attackingType)) multiplier *= 0.5;
                         if (typeChart[defendingType].imm.includes(attackingType)) multiplier *= 0.0;
                     });
-        
-                    // Schwächen
+
                     if (multiplier === 4.0) weak[attackingType] = (weak[attackingType] || 0) + 2;
                     else if (multiplier === 2.0) weak[attackingType] = (weak[attackingType] || 0) + 1;
                     
-                    // Immunitäten (separat speichern)
                     if (multiplier === 0) {
                         imm[attackingType] = (imm[attackingType] || 0) + 1;
-                    } 
-                    // Resistenzen (auch wenn eine Immunität im Team ist, wird hier gezählt)
-                    else if (multiplier < 1.0) {
+                    } else if (multiplier < 1.0) {
                         res[attackingType] = (res[attackingType] || 0) + 1;
                     }
                 });
             });
+
+            const renderChip = (type, count, cl, isImm) => {
+                const immClass = isImm ? 'immunity-chip' : '';
+                const shield = isImm ? '🛡️ ' : '';
+                return `<div class="radar-chip ${cl} ${immClass}">${shield}<img src="types/${type}.png" height="10"> ${count}x</div>`;
+            };
+
+            let resHTML = "";
+            Object.entries(imm).sort((a,b) => b[1]-a[1]).forEach(([type, count]) => {
+                resHTML += renderChip(type, count, 'res-info', true);
+            });
+            Object.entries(res).sort((a,b) => b[1]-a[1]).forEach(([type, count]) => {
+                resHTML += renderChip(type, count, 'res-info', false);
+            });
+
+            const weakHTML = Object.entries(weak)
+                .filter(e => e[1] >= 3)
+                .sort((a,b) => b[1]-a[1])
+                .map(e => renderChip(e[0], e[1], 'weak-warning', false))
+                .join('');
+
+            document.getElementById('weakness-radar').innerHTML = weakHTML || "Keine kritischen Schwächen.";
+            document.getElementById('resistance-radar').innerHTML = resHTML || "Keine Resistenzen.";
+        }
         
             // Hilfsfunktion zum Rendern der Chips
             const renderChip = (type, count, cl, isImm) => {
@@ -354,6 +375,7 @@
     </script>
 </body>
 </html>
+
 
 
 
