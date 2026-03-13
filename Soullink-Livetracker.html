@@ -60,12 +60,33 @@
         .card-content { padding: 20px; }
         .pair { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         
-        .slot { flex: 1; text-align: center; min-width: 140px; }
+        /* Slot-Anpassung damit alles kompakt bleibt */
+		.slot { 
+			flex: 1; 
+			text-align: center; 
+			min-width: 120px; 
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+		}
         .slot img { width: 90px; height: 90px; object-fit: contain; margin-bottom: 8px; }
         
         .name { font-weight: bold; color: var(--primary); font-size: 1em; margin: 5px 0; min-height: 1.2em; }
-        .type-container { display: flex; justify-content: center; gap: 5px; height: 20px; }
-        .type-icon { height: 18px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5)); }
+        /* Gezielt für die Typen-Icons */
+		.type-container { 
+			display: flex; 
+			justify-content: center; 
+			gap: 3px;         /* Enge Abstände zwischen zwei Typen */
+			height: 14px;      /* Festgelegte Container-Höhe */
+			margin-top: 5px;   /* Kleiner Abstand zum Namen */
+		}
+
+		.type-icon { 
+			height: 14px;      /* Icons werden auf 14 Pixel geschrumpft */
+			width: auto;       /* Breite passt sich proportional an */
+			filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));
+			display: block;    /* Verhindert komische Abstände unter dem Bild */
+		}
         
         .user-tag { font-size: 0.65em; color: #888; margin-bottom: 8px; text-transform: uppercase; font-weight: bold; }
         .link-icon { color: #ff4444; font-size: 1.5em; flex-shrink: 0; }
