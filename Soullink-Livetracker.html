@@ -32,7 +32,7 @@
         }
         nav button.active { background: var(--primary); color: black; }
 
-        /* Der schmale Ladebalken */
+        /* Der schmale Ladebalken unter der Nav */
         #loading-bar-container { width: 100%; height: 3px; background: #222; position: sticky; top: 52px; z-index: 1999; }
         #loading-bar { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
 
@@ -59,7 +59,7 @@
 
         /* STATS SEITE */
         .stats-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1200px; margin: 0 auto; }
-        .stats-container { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; flex: 1; min-width: 300px; }
+        .stats-container { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; flex: 1; min-width: 320px; }
         .stat-row { margin-bottom: 20px; }
         .stat-label { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; font-size: 0.85em; }
         .bar-bg { background: #111; height: 25px; border-radius: 4px; overflow: hidden; }
@@ -67,17 +67,17 @@
         .jan-bar { background: linear-gradient(90deg, #cc0000, #ff4444); }
         .phoadse-bar { background: linear-gradient(90deg, #999, #fff); }
 
-        /* Typ-Raster Aufpoliert */
+        /* Typ-Verteilung - Nur Rahmen gefärbt */
         #type-distribution { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
         .type-stat-card { 
             background: rgba(255,255,255,0.03); 
-            border-left: 4px solid #555; /* Farbe wird per JS gesetzt */
+            border-left: 4px solid #555; 
             padding: 10px; border-radius: 6px; 
             display: flex; justify-content: space-between; align-items: center;
         }
-        .type-stat-icon { height: 12px !important; }
+        .type-stat-icon { height: 12px !important; width: auto; }
         .type-stat-count { font-weight: bold; font-size: 0.9em; }
-    </script>
+    </style>
 </head>
 <body>
 
@@ -89,8 +89,8 @@
 
     <div id="tracker" class="page active">
         <h1>Soullink Tracker</h1>
-        <div id="last-update" class="update-info">Warte auf Sync...</div>
-        <div id="dashboard">Lade Pokémon...</div>
+        <div id="last-update" class="update-info">Initialisiere Sync...</div>
+        <div id="dashboard">Lade Pokémon-Daten...</div>
     </div>
 
     <div id="stats" class="page">
@@ -108,6 +108,7 @@
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbyse91y4J3RwTzyywU6Miyl_pag8SdiwuOEOP4CvP-CwKTcO7bgRnij0FoFmXD-lxGp/exec';
         const MISSING_NO_URL = "https://www.pngkey.com/png/full/343-3434526_missingno-missingno-sprite.png";
+        
         let pokemonMap = {};
 
         const typeColors = {
@@ -129,41 +130,55 @@
 
         function getTypeIconsHTML(typeString) {
             if (!typeString || typeString === "???" || typeString === "Unbekannt") return "";
-            return typeString.split(/[\s/]+/).filter(t => t.length > 0).map(t => 
-                `<img src="types/${superClean(t)}.png" class="type-icon" onerror="this.style.display='none'">`
-            ).join('');
+            return typeString.split(/[\s/]+/).filter(t => t.length > 0).map(t => {
+                const ct = superClean(t).replace('ä','kaefer').replace('kaefer','kaefer'); // Redundanz für Sicherheit
+                return `<img src="types/${superClean(t).replace('ä','kaefer')}.png" class="type-icon" onerror="this.style.display='none'">`;
+            }).join('');
         }
 
         function handleImgError(imgElement, enName) {
-            imgElement.src = imgElement.src.includes('black-white') 
-                ? `https://img.pokemondb.net/sprites/scarlet-violet/normal/${enName}.png` 
-                : MISSING_NO_URL;
+            if (imgElement.src.includes('black-white')) {
+                imgElement.src = `https://img.pokemondb.net/sprites/scarlet-violet/normal/${enName}.png`;
+            } else {
+                imgElement.src = MISSING_NO_URL;
+                imgElement.onerror = null;
+            }
         }
 
         function renderTypeStats(pairsData) {
             const counts = {};
             const statusIdx = pairsData[0].findIndex(c => String(c).toUpperCase().includes("GÜLTIG"));
+            
             for (let i = 1; i < pairsData.length; i++) {
                 const row = pairsData[i];
                 if (row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE') {
+                    // Spieler 1 (Spalte B) und Spieler 2 (Spalte C)
                     [row[1], row[2]].forEach(name => {
                         const info = pokemonMap[superClean(name)];
                         if (info && info.type) {
                             info.type.split(/[\s/]+/).forEach(t => {
-                                const ct = superClean(t).replace('ä','ae');
+                                const ct = superClean(t).replace('ä','kaefer');
                                 if(ct) counts[ct] = (counts[ct] || 0) + 1;
                             });
                         }
                     });
                 }
             }
-            const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
-            document.getElementById('type-distribution').innerHTML = sorted.map(([t, c]) => `
+
+            const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+            const distDiv = document.getElementById('type-distribution');
+            
+            if (sorted.length === 0) {
+                distDiv.innerHTML = "<p>Keine aktiven Pokémon im Team.</p>";
+                return;
+            }
+
+            distDiv.innerHTML = sorted.map(([t, c]) => `
                 <div class="type-stat-card" style="border-left-color: ${typeColors[t] || '#555'}">
                     <img src="types/${t}.png" class="type-stat-icon" onerror="this.style.display='none'">
                     <span class="type-stat-count" style="color: ${typeColors[t] || '#fff'}">${c}x</span>
                 </div>
-            `).join('') || "<p>Kein Team aktiv.</p>";
+            `).join('');
         }
 
         function renderBars(targetId, dataArray) {
@@ -171,11 +186,16 @@
             if (!dataArray || dataArray.length < 2) return;
             const stats = dataArray.slice(1); 
             const total = stats.reduce((sum, row) => sum + (parseInt(row[1]) || 0), 0);
+            
             container.innerHTML = stats.map(row => {
                 const val = parseInt(row[1]) || 0;
                 const perc = total > 0 ? (val / total * 100) : 0;
                 const barClass = row[0].toLowerCase().includes('jan') ? 'jan-bar' : 'phoadse-bar';
-                return `<div class="stat-row"><div class="stat-label"><span>${row[0]}</span><span>${val}</span></div><div class="bar-bg"><div class="bar-fill ${barClass}" style="width: ${perc}%"></div></div></div>`;
+                return `
+                    <div class="stat-row">
+                        <div class="stat-label"><span>${row[0]}</span><span>${val}</span></div>
+                        <div class="bar-bg"><div class="bar-fill ${barClass}" style="width: ${perc}%"></div></div>
+                    </div>`;
             }).join('');
         }
 
@@ -214,26 +234,33 @@
                         trackerHtml += `<div class="card"><div class="route-header">${row[0]}</div><div class="card-content"><div class="pair">${slots}</div></div></div>`;
                     }
                 }
-                document.getElementById('dashboard').innerHTML = trackerHtml || "<p>Keine Paare.</p>";
+                document.getElementById('dashboard').innerHTML = trackerHtml || "<p>Keine Paare gefunden.</p>";
                 document.getElementById('last-update').innerText = "Sync: " + new Date().toLocaleTimeString();
+                
                 renderBars('death-bars', json.stats.deaths);
                 renderBars('wipeout-bars', json.stats.wipeouts);
                 renderTypeStats(pairsData);
                 
                 bar.style.width = "100%";
-                setTimeout(() => bar.style.width = "0%", 1000);
-            } catch (e) { console.error(e); bar.style.backgroundColor = "red"; }
+                setTimeout(() => { bar.style.width = "0%"; }, 1000);
+            } catch (e) { 
+                console.error("Update Fehler:", e); 
+                bar.style.backgroundColor = "red";
+                document.getElementById('last-update').innerText = "Sync Fehler!";
+            }
         }
 
         async function init() {
-            await (async () => {
+            try {
                 const r = await fetch('pokemon_with_types.json?v=' + Date.now());
                 const d = await r.json();
                 const m = d.pokemon ? d.pokemon : d;
                 for (let k in m) { pokemonMap[superClean(k)] = m[k]; }
-            })();
-            update();
-            setInterval(update, 30000);
+                await update();
+                setInterval(update, 30000);
+            } catch (err) {
+                console.error("Init Fehler:", err);
+            }
         }
         init();
     </script>
