@@ -19,6 +19,7 @@
             margin: 0; padding-bottom: 50px;
         }
 
+        /* Navigation & Progress */
         nav { 
             background: #222; padding: 10px; position: sticky; top: 0; 
             z-index: 2000; display: flex; justify-content: center; gap: 15px; 
@@ -31,6 +32,10 @@
         }
         nav button.active { background: var(--primary); color: black; }
 
+        /* Der schmale Ladebalken */
+        #loading-bar-container { width: 100%; height: 3px; background: #222; position: sticky; top: 52px; z-index: 1999; }
+        #loading-bar { width: 0%; height: 100%; background: var(--primary); transition: width 0.5s; }
+
         .page { display: none; padding: 20px; animation: fadeIn 0.4s ease-in; }
         .page.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -38,54 +43,41 @@
         h1 { color: var(--primary); text-shadow: 2px 2px #3b4cca; margin-bottom: 5px; text-align: center; }
         .update-info { font-size: 0.75em; color: #888; margin-bottom: 20px; text-align: center; }
 
-        /* DASHBOARD & KARTEN */
-        #dashboard { 
-            display: flex; flex-wrap: wrap; justify-content: center; 
-            gap: 20px; max-width: 1400px; margin: 0 auto; 
-        }
-        .card { 
-            background: var(--card); border: 2px solid #333; border-radius: 12px; 
-            overflow: hidden; width: 420px; transition: 0.3s;
-        }
-        .route-header { 
-            background: #2a2a2a; padding: 8px; font-size: 0.7em; 
-            font-weight: bold; text-align: center; text-transform: uppercase;
-            border-bottom: 1px solid #333; color: #999;
-        }
-
+        /* TRACKER KARTEN */
+        #dashboard { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1400px; margin: 0 auto; }
+        .card { background: var(--card); border: 2px solid #333; border-radius: 12px; overflow: hidden; width: 420px; }
+        .route-header { background: #2a2a2a; padding: 8px; font-size: 0.7em; font-weight: bold; text-align: center; text-transform: uppercase; border-bottom: 1px solid #333; color: #999; }
         .card-content { padding: 15px; }
         .pair { display: flex; justify-content: space-between; align-items: center; gap: 5px; }
-        
         .slot { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; }
         .slot img.poke-sprite { width: 70px; height: 70px; object-fit: contain; margin-bottom: 5px; }
-        
         .name { font-weight: bold; color: var(--primary); font-size: 0.95em; margin: 2px 0; }
-        
-        /* TYPEN-ICONS KORREKTUR */
         .type-container { display: flex; justify-content: center; gap: 4px; height: 14px; margin-top: 4px; }
         .type-icon { height: 14px !important; max-height: 14px !important; width: auto; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
-        
         .user-tag { font-size: 0.6em; color: #777; margin-bottom: 4px; text-transform: uppercase; }
-        .link-icon { color: #ff4444; font-size: 1.2em; opacity: 0.8; }
+        .link-icon { color: #ff4444; font-size: 1.2em; }
 
         /* STATS SEITE */
         .stats-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1200px; margin: 0 auto; }
-        .stats-container { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; flex: 1; min-width: 300px; max-width: 500px; }
-        
-        /* Balken für Deaths/Wipeouts */
-        .stat-row { margin-bottom: 20px; text-align: left; }
+        .stats-container { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; flex: 1; min-width: 300px; }
+        .stat-row { margin-bottom: 20px; }
         .stat-label { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; font-size: 0.85em; }
         .bar-bg { background: #111; height: 25px; border-radius: 4px; overflow: hidden; }
-        .bar-fill { height: 100%; transition: width 1s ease-in-out; }
+        .bar-fill { height: 100%; transition: width 1s; }
         .jan-bar { background: linear-gradient(90deg, #cc0000, #ff4444); }
         .phoadse-bar { background: linear-gradient(90deg, #999, #fff); }
 
-        /* Typen-Verteilung Grid */
-        #type-distribution { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-top: 15px; }
-        .type-stat-card { background: #2a2a2a; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #444; }
-        .type-stat-icon { height: 12px !important; max-height: 12px !important; margin-bottom: 5px; }
-        .type-stat-count { display: block; font-weight: bold; color: var(--primary); font-size: 0.9em; }
-    </style>
+        /* Typ-Raster Aufpoliert */
+        #type-distribution { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
+        .type-stat-card { 
+            background: rgba(255,255,255,0.03); 
+            border-left: 4px solid #555; /* Farbe wird per JS gesetzt */
+            padding: 10px; border-radius: 6px; 
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .type-stat-icon { height: 12px !important; }
+        .type-stat-count { font-weight: bold; font-size: 0.9em; }
+    </script>
 </head>
 <body>
 
@@ -93,11 +85,12 @@
         <button onclick="showPage('tracker', this)" class="active">Live-Tracker</button>
         <button onclick="showPage('stats', this)">Statistiken</button>
     </nav>
+    <div id="loading-bar-container"><div id="loading-bar"></div></div>
 
     <div id="tracker" class="page active">
         <h1>Soullink Tracker</h1>
-        <div id="last-update" class="update-info">Initialisiere...</div>
-        <div id="dashboard">Lade Pokémon-Paare...</div>
+        <div id="last-update" class="update-info">Warte auf Sync...</div>
+        <div id="dashboard">Lade Pokémon...</div>
     </div>
 
     <div id="stats" class="page">
@@ -105,8 +98,8 @@
         <div class="stats-grid">
             <div class="stats-container"><h3>💀 Death Counter</h3><div id="death-bars"></div></div>
             <div class="stats-container"><h3>🌋 Wipeout Counter</h3><div id="wipeout-bars"></div></div>
-            <div class="stats-container" style="max-width: 1000px; flex-basis: 100%;">
-                <h3>📊 Typen-Team-Verteilung</h3>
+            <div class="stats-container" style="flex-basis: 100%; max-width: 100%;">
+                <h3>📊 Typen-Verteilung (Aktives Team)</h3>
                 <div id="type-distribution"></div>
             </div>
         </div>
@@ -117,6 +110,14 @@
         const MISSING_NO_URL = "https://www.pngkey.com/png/full/343-3434526_missingno-missingno-sprite.png";
         let pokemonMap = {};
 
+        const typeColors = {
+            normal: "#A8A77A", feuer: "#EE8130", wasser: "#6390F0", elektro: "#F7D02C", 
+            pflanze: "#7AC74C", eis: "#96D9D6", kampf: "#C22E28", gift: "#A33EA1", 
+            boden: "#E2BF65", flug: "#A98FF3", psycho: "#F95587", kaefer: "#A6B91A", 
+            gestein: "#B6A136", geist: "#735797", drache: "#6F35FC", unlicht: "#705746", 
+            stahl: "#B7B7CE", fee: "#D685AD"
+        };
+
         function showPage(id, btn) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
@@ -126,29 +127,43 @@
 
         function superClean(str) { return String(str).toLowerCase().replace(/[\s\t\n\r]/g, '').trim(); }
 
-        function getTypeIconsHTML(typeString, isStat = false) {
+        function getTypeIconsHTML(typeString) {
             if (!typeString || typeString === "???" || typeString === "Unbekannt") return "";
-            const types = typeString.split(/[\s/]+/).filter(t => t.length > 0);
-            const cssClass = isStat ? "type-stat-icon" : "type-icon";
-            return types.map(t => `<img src="types/${superClean(t)}.png" class="${cssClass}" onerror="this.style.display='none'">`).join('');
+            return typeString.split(/[\s/]+/).filter(t => t.length > 0).map(t => 
+                `<img src="types/${superClean(t)}.png" class="type-icon" onerror="this.style.display='none'">`
+            ).join('');
         }
 
         function handleImgError(imgElement, enName) {
-            if (imgElement.src.includes('black-white')) {
-                imgElement.src = `https://img.pokemondb.net/sprites/scarlet-violet/normal/${enName}.png`;
-            } else {
-                imgElement.src = MISSING_NO_URL;
-                imgElement.onerror = null;
-            }
+            imgElement.src = imgElement.src.includes('black-white') 
+                ? `https://img.pokemondb.net/sprites/scarlet-violet/normal/${enName}.png` 
+                : MISSING_NO_URL;
         }
 
-        async function loadTranslations() {
-            try {
-                const response = await fetch('pokemon_with_types.json?v=' + Date.now());
-                const data = await response.json();
-                const rawMap = data.pokemon ? data.pokemon : data;
-                for (let key in rawMap) { pokemonMap[superClean(key)] = rawMap[key]; }
-            } catch (e) { console.error(e); }
+        function renderTypeStats(pairsData) {
+            const counts = {};
+            const statusIdx = pairsData[0].findIndex(c => String(c).toUpperCase().includes("GÜLTIG"));
+            for (let i = 1; i < pairsData.length; i++) {
+                const row = pairsData[i];
+                if (row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE') {
+                    [row[1], row[2]].forEach(name => {
+                        const info = pokemonMap[superClean(name)];
+                        if (info && info.type) {
+                            info.type.split(/[\s/]+/).forEach(t => {
+                                const ct = superClean(t).replace('ä','ae');
+                                if(ct) counts[ct] = (counts[ct] || 0) + 1;
+                            });
+                        }
+                    });
+                }
+            }
+            const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+            document.getElementById('type-distribution').innerHTML = sorted.map(([t, c]) => `
+                <div class="type-stat-card" style="border-left-color: ${typeColors[t] || '#555'}">
+                    <img src="types/${t}.png" class="type-stat-icon" onerror="this.style.display='none'">
+                    <span class="type-stat-count" style="color: ${typeColors[t] || '#fff'}">${c}x</span>
+                </div>
+            `).join('') || "<p>Kein Team aktiv.</p>";
         }
 
         function renderBars(targetId, dataArray) {
@@ -156,53 +171,22 @@
             if (!dataArray || dataArray.length < 2) return;
             const stats = dataArray.slice(1); 
             const total = stats.reduce((sum, row) => sum + (parseInt(row[1]) || 0), 0);
-            let html = "";
-            stats.forEach(row => {
-                const name = row[0];
-                const count = parseInt(row[1]) || 0;
-                const perc = total > 0 ? (count / total * 100) : 0;
-                const barClass = name.toLowerCase().includes('jan') ? 'jan-bar' : 'phoadse-bar';
-                html += `<div class="stat-row"><div class="stat-label"><span>${name}</span><span>${count}</span></div><div class="bar-bg"><div class="bar-fill ${barClass}" style="width: ${perc}%"></div></div></div>`;
-            });
-            container.innerHTML = html;
-        }
-
-        function renderTypeStats(pairsData) {
-            const typeCounts = {};
-            const statusIdx = pairsData[0].findIndex(c => String(c).toUpperCase().includes("GÜLTIG"));
-
-            for (let i = 1; i < pairsData.length; i++) {
-                const row = pairsData[i];
-                if (row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE') {
-                    [row[1], row[2]].forEach(name => {
-                        const pInfo = pokemonMap[superClean(name)];
-                        if (pInfo && pInfo.type) {
-                            const types = pInfo.type.split(/[\s/]+/);
-                            types.forEach(t => {
-                                const cleanT = superClean(t);
-                                if(cleanT) typeCounts[cleanT] = (typeCounts[cleanT] || 0) + 1;
-                            });
-                        }
-                    });
-                }
-            }
-
-            const sortedTypes = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
-            let html = "";
-            sortedTypes.forEach(([type, count]) => {
-                html += `
-                    <div class="type-stat-card">
-                        <img src="types/${type}.png" class="type-stat-icon" onerror="this.style.display='none'">
-                        <span class="type-stat-count">${count}x</span>
-                    </div>`;
-            });
-            document.getElementById('type-distribution').innerHTML = html || "<p>Keine aktiven Pokémon im Team.</p>";
+            container.innerHTML = stats.map(row => {
+                const val = parseInt(row[1]) || 0;
+                const perc = total > 0 ? (val / total * 100) : 0;
+                const barClass = row[0].toLowerCase().includes('jan') ? 'jan-bar' : 'phoadse-bar';
+                return `<div class="stat-row"><div class="stat-label"><span>${row[0]}</span><span>${val}</span></div><div class="bar-bg"><div class="bar-fill ${barClass}" style="width: ${perc}%"></div></div></div>`;
+            }).join('');
         }
 
         async function update() {
+            const bar = document.getElementById('loading-bar');
+            bar.style.width = "30%";
             try {
                 const response = await fetch(API_URL);
                 const json = await response.json();
+                bar.style.width = "70%";
+                
                 const pairsData = json.pairs;
                 const statusIdx = pairsData[0].findIndex(c => String(c).toUpperCase().includes("GÜLTIG"));
                 const playerNames = [];
@@ -230,18 +214,25 @@
                         trackerHtml += `<div class="card"><div class="route-header">${row[0]}</div><div class="card-content"><div class="pair">${slots}</div></div></div>`;
                     }
                 }
-                document.getElementById('dashboard').innerHTML = trackerHtml || "<p class='empty-msg'>Keine aktiven Paare gefunden.</p>";
+                document.getElementById('dashboard').innerHTML = trackerHtml || "<p>Keine Paare.</p>";
                 document.getElementById('last-update').innerText = "Sync: " + new Date().toLocaleTimeString();
-                
                 renderBars('death-bars', json.stats.deaths);
                 renderBars('wipeout-bars', json.stats.wipeouts);
                 renderTypeStats(pairsData);
-            } catch (e) { console.error(e); }
+                
+                bar.style.width = "100%";
+                setTimeout(() => bar.style.width = "0%", 1000);
+            } catch (e) { console.error(e); bar.style.backgroundColor = "red"; }
         }
 
         async function init() {
-            await loadTranslations();
-            await update();
+            await (async () => {
+                const r = await fetch('pokemon_with_types.json?v=' + Date.now());
+                const d = await r.json();
+                const m = d.pokemon ? d.pokemon : d;
+                for (let k in m) { pokemonMap[superClean(k)] = m[k]; }
+            })();
+            update();
             setInterval(update, 30000);
         }
         init();
