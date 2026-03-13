@@ -3,224 +3,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soullink Live-Tracker Pro</title>
+    <title>Soullink Pro Tracker & Stats</title>
     <style>
+        :root { 
+            --primary: #ffcb05; 
+            --secondary: #3b4cca; 
+            --bg: #121212; 
+            --card: #1e1e1e; 
+            --accent: #ff4444;
+            /* Farben für euch beide */
+            --color-jan: #4facfe; 
+            --color-phoadse: #f093fb;
+        }
+
         body { 
-            background-color: #121212; 
-            color: #ffffff; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
+            background: var(--bg); 
+            color: white; 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
             margin: 0; 
-            overflow-x: hidden;
+            padding-bottom: 50px;
         }
 
-        /* Progress Bar */
-        #progress-container { 
-            width: 100%; height: 5px; background: #222; position: fixed; top: 0; left: 0; z-index: 1000; 
-        }
-        #progress-bar { 
-            width: 100%; height: 100%; background: #ffcb05; box-shadow: 0 0 10px #ffcb05; transition: width 1s linear; 
-        }
-
-        h1 { color: #ffcb05; text-shadow: 3px 3px #3b4cca; margin-top: 40px; margin-bottom: 5px; font-size: 2.5em; }
-        #last-update { font-size: 0.85em; color: #888; margin-bottom: 20px; }
-        .update-flash { color: #00ff00 !important; font-weight: bold; }
-
-        /* Dashboard Layout */
-        #dashboard { display: flex; flex-wrap: wrap; justify-content: center; gap: 25px; padding: 20px; max-width: 95%; }
-
-        .card { 
-            background: #1e1e1e; border: 2px solid #333; border-radius: 15px; 
-            box-shadow: 0 8px 16px rgba(0,0,0,0.6); overflow: hidden; 
-            transition: transform 0.2s ease; min-width: 300px;
-        }
-        .card:hover { transform: translateY(-5px); }
-
-        .route-header { 
-            background: #333; color: #ddd; font-size: 0.75em; font-weight: bold; padding: 10px; 
-            text-align: center; text-transform: uppercase; border-bottom: 1px solid #444;
-        }
-
-        .card-content { padding: 15px; }
-        .pair { display: flex; justify-content: center; align-items: center; gap: 10px; }
-        .slot { flex: 1; text-align: center; min-width: 110px; }
-        
-        .slot img.poke-sprite { 
-            width: 80px; height: 80px; image-rendering: auto; margin-bottom: 5px; object-fit: contain; 
-        }
-
-        .name { font-weight: bold; color: #ffcb05; font-size: 0.95em; margin-bottom: 8px; }
-        
-        /* NEU: Container für Typ-Bilder */
-        .type-container { 
+        /* Navigation */
+        nav { 
+            background: #222; 
+            padding: 10px; 
+            position: sticky; 
+            top: 0; 
+            z-index: 2000; 
             display: flex; 
             justify-content: center; 
-            gap: 4px; 
-            height: 20px; 
-            margin-top: 2px;
+            gap: 15px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
         }
-        .type-icon { 
-            height: 18px; 
-            width: auto; 
-            filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.5));
+        nav button { 
+            background: #333; 
+            border: none; 
+            color: white; 
+            padding: 10px 25px; 
+            border-radius: 25px; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8em;
         }
+        nav button.active { background: var(--primary); color: black; }
 
-        .user-tag { font-size: 0.6em; color: #aaa; text-transform: uppercase; margin-bottom: 5px; }
-        .link-icon { font-size: 1.2em; color: #ff4444; }
-        .empty-msg { color: #555; margin-top: 50px; font-style: italic; }
+        /* Seiten-Logik */
+        .page { display: none; padding: 20px; animation: fadeIn 0.4s ease-in; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h1 { color: var(--primary); text-shadow: 2px 2px var(--secondary); margin-bottom: 5px; }
+        .update-info { font-size: 0.75em; color: #888; margin-bottom: 20px; }
+
+        /* Tracker Design */
+        #dashboard { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
+        .card { 
+            background: var(--card); border: 2px solid #333; border-radius: 15px; 
+            overflow: hidden; min-width: 320px; transition: 0.3s;
+        }
+        .card:hover { transform: scale(1.02); border-color: var(--primary); }
+        .route-header { background: #333; padding: 10px; font-size: 0.7em; font-weight: bold; letter-spacing: 1px; }
+        .card-content { padding: 15px; }
+        .pair { display: flex; justify-content: center; align-items: center; gap: 10px; }
+        .slot { flex: 1; text-align: center; }
+        .slot img { width: 80px; height: 80px; object-fit: contain; }
+        .name { font-weight: bold; color: var(--primary); font-size: 0.9em; margin: 5px 0; }
+        .type-container { display: flex; justify-content: center; gap: 4px; height: 18px; }
+        .type-icon { height: 16px; }
+        .user-tag { font-size: 0.6em; color: #aaa; margin-bottom: 5px; text-transform: uppercase; }
+
+        /* Statistik Design */
+        .stats-container { max-width: 500px; margin: 20px auto; background: var(--card); padding: 30px; border-radius: 20px; border: 1px solid #333; }
+        .stat-row { margin-bottom: 25px; text-align: left; }
+        .stat-label { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; }
+        .bar-bg { background: #111; height: 30px; border-radius: 15px; overflow: hidden; border: 1px solid #444; }
+        .bar-fill { height: 100%; transition: width 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        
+        .jan-bar { background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); }
+        .phoadse-bar { background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%); }
+
+        .empty-msg { color: #555; font-style: italic; margin-top: 50px; }
     </style>
 </head>
 <body>
 
-    <div id="progress-container"><div id="progress-bar"></div></div>
-    <h1>Soullink Tracker</h1>
-    <div id="last-update">Initialisiere Pokédex...</div>
-    <div id="dashboard"></div>
+    <nav>
+        <button onclick="showPage('tracker', this)" class="active">Live-Tracker</button>
+        <button onclick="showPage('stats', this)">Statistiken</button>
+    </nav>
+
+    <div id="tracker" class="page active">
+        <h1>Soullink Tracker</h1>
+        <div id="last-update" class="update-info">Initialisiere...</div>
+        <div id="dashboard">Lade Pokémon-Paare...</div>
+    </div>
+
+    <div id="stats" class="page">
+        <h1>Run Statistiken</h1>
+        
+        <div class="stats-container">
+            <h3>💀 Death Counter</h3>
+            <div id="death-bars"></div>
+            <p style="font-size: 0.7em; color: #666; margin-top: 10px;">Wer hat wie viele Pokémon im Kampf verloren?</p>
+        </div>
+
+        <div class="stats-container">
+            <h3>🌋 Wipeout Counter</h3>
+            <div id="wipeout-bars"></div>
+            <p style="font-size: 0.7em; color: #666; margin-top: 10px;">Verursachte Team-Wipes (Game Over)</p>
+        </div>
+    </div>
 
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbxSB2hu6jWcDEDP0onx8IqBAdY49URenMbM8UdN7El921Lg6fQeq1pP86Y9r-yG5D-O/exec'; 
-        const REFRESH_SECONDS = 30;
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxjePDzJ2_UTK6Vi-64FTLII4ei6aihOKbsoI3wc0hBjOqrBNZAVV8yBe5YQbOzpRvN/exec';
         const MISSING_NO_URL = "https://www.pngkey.com/png/full/343-3434526_missingno-missingno-sprite.png";
         
-        let pokemonMap = {}; 
-        let secondsLeft = REFRESH_SECONDS;
+        let pokemonMap = {};
 
-        function superClean(str) {
-            return String(str).toLowerCase().replace(/[\s\t\n\r]/g, '').trim();
+        function showPage(id, btn) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            btn.classList.add('active');
         }
 
-        // NEU: Funktion um Icons basierend auf dem Typ-String zu generieren
+        function superClean(str) { return String(str).toLowerCase().replace(/[\s\t\n\r]/g, '').trim(); }
+
         function getTypeIconsHTML(typeString) {
-            if (!typeString || typeString === "???" || typeString === "Unbekannt") return "";
-            
-            // Trennt "Pflanze Gift" oder "Pflanze / Gift" in einzelne Wörter
+            if (!typeString || typeString === "???") return "";
             const types = typeString.split(/[\s/]+/).filter(t => t.length > 0);
-            
-            return types.map(t => {
-                const cleanT = superClean(t);
-                // Erwartet die Bilder im Unterordner types/ (z.B. types/wasser.png)
-                return `<img src="types/${cleanT}.png" class="type-icon" title="${t}" onerror="this.style.display='none'">`;
-            }).join('');
-        }
-
-        async function loadTranslations() {
-            try {
-                // Nutze den Namen deiner aktuellen Datei
-                const response = await fetch('pokemon_with_types.json?v=' + Date.now());
-                if (!response.ok) throw new Error("JSON konnte nicht geladen werden");
-                const data = await response.json();
-                let rawMap = data.pokemon ? data.pokemon : data;
-
-                pokemonMap = {};
-                for (let key in rawMap) {
-                    pokemonMap[superClean(key)] = rawMap[key];
-                }
-                console.log("Pokédex-Daten geladen.");
-            } catch (e) {
-                console.error("Übersetzungs-Fehler:", e);
-            }
+            return types.map(t => `<img src="types/${superClean(t)}.png" class="type-icon" onerror="this.style.display='none'">`).join('');
         }
 
         function handleImgError(imgElement, enName) {
             if (imgElement.src.includes('black-white')) {
                 imgElement.src = `https://img.pokemondb.net/sprites/scarlet-violet/normal/${enName}.png`;
-            } 
-            else if (imgElement.src.includes('scarlet-violet')) {
+            } else if (imgElement.src.includes('scarlet-violet')) {
                 imgElement.src = `https://img.pokemondb.net/sprites/x-y/normal/${enName}.png`;
-            }
-            else {
+            } else {
                 imgElement.src = MISSING_NO_URL;
                 imgElement.onerror = null;
             }
         }
 
-        async function update() {
-            const statusLabel = document.getElementById('last-update');
-            const board = document.getElementById('dashboard');
+        async function loadTranslations() {
+            try {
+                const response = await fetch('pokemon_with_types.json?v=' + Date.now());
+                const data = await response.json();
+                pokemonMap = {};
+                for (let key in data.pokemon) { pokemonMap[superClean(key)] = data.pokemon[key]; }
+            } catch (e) { console.error("JSON Fehler:", e); }
+        }
 
+        function renderBars(targetId, dataArray) {
+            const container = document.getElementById(targetId);
+            if (!dataArray || dataArray.length < 2) return;
+
+            // Daten säubern (Header entfernen)
+            const stats = dataArray.slice(1); 
+            const total = stats.reduce((sum, row) => sum + (parseInt(row[1]) || 0), 0);
+            
+            let html = "";
+            stats.forEach(row => {
+                const name = row[0];
+                const count = parseInt(row[1]) || 0;
+                const perc = total > 0 ? (count / total * 100) : 0;
+                const barClass = name.toLowerCase().includes('jan') ? 'jan-bar' : 'phoadse-bar';
+
+                html += `
+                    <div class="stat-row">
+                        <div class="stat-label"><span>${name}</span><span>${count}</span></div>
+                        <div class="bar-bg"><div class="bar-fill ${barClass}" style="width: ${perc}%"></div></div>
+                    </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        async function update() {
             try {
                 const response = await fetch(API_URL);
-                const data = await response.json(); 
-                if (!data || data.length < 1) return;
-
-                const headerRow = data[0];
-                const statusColIdx = headerRow.findIndex(cell => 
-                    String(cell).trim().toUpperCase().startsWith("GÜLTIG")
-                );
-
-                const playerNames = [];
-                for (let col = 1; col < statusColIdx; col++) {
-                    if (headerRow[col]) playerNames.push(headerRow[col]);
-                }
+                const json = await response.json();
                 
-                let htmlBuffer = "";
+                // 1. Tracker Paare
+                const pairsData = json.pairs;
+                const board = document.getElementById('dashboard');
+                const statusIdx = pairsData[0].findIndex(c => String(c).toUpperCase().includes("GÜLTIG"));
+                const playerNames = [];
+                for(let col=1; col < statusIdx; col++) if(pairsData[0][col]) playerNames.push(pairsData[0][col]);
 
-                for (let i = 1; i < data.length; i++) {
-                    const row = data[i];
-                    const status = row[statusColIdx];
-                    const isTrue = (status === true || String(status).toUpperCase() === 'TRUE' || String(status).toUpperCase() === 'WAHR');
-                    
-                    if (isTrue && row[1] && String(row[1]).toLowerCase() !== "starter") {
-                        let playerSlotsHtml = "";
-                        
-                        for (let pIdx = 0; pIdx < playerNames.length; pIdx++) {
-                            const deNameRaw = String(row[pIdx + 1]).trim();
-                            const deNameClean = superClean(deNameRaw);
+                let trackerHtml = "";
+                for (let i = 1; i < pairsData.length; i++) {
+                    const row = pairsData[i];
+                    if ((row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE') && row[1]) {
+                        let slots = "";
+                        for (let p=0; p < playerNames.length; p++) {
+                            const rawName = String(row[p+1]).trim();
+                            const pInfo = pokemonMap[superClean(rawName)] || { en: rawName, type: "???" };
+                            const imgName = pInfo.en.toLowerCase().replace(/\s+/g, '-').replace('♀','-f').replace('♂','-m');
                             
-                            const pokeData = pokemonMap[deNameClean];
-                            const enName = pokeData ? (pokeData.en || deNameClean) : deNameClean;
-                            const pType = pokeData ? (pokeData.type || "Unbekannt") : "???";
-
-                            const imgName = String(enName).toLowerCase().trim()
-                                            .replace(/\s+/g, '-')
-                                            .replace(/\./g, '')
-                                            .replace('♀', '-f')
-                                            .replace('♂', '-m');
-
-                            const startUrl = `https://img.pokemondb.net/sprites/black-white/anim/normal/${imgName}.gif`;
-
-                            playerSlotsHtml += `
+                            slots += `
                                 <div class="slot">
-                                    <div class="user-tag">${playerNames[pIdx]}</div>
-                                    <img src="${startUrl}" class="poke-sprite" onerror="handleImgError(this, '${imgName}')">
-                                    <div class="name">${deNameRaw}</div>
-                                    <div class="type-container">${getTypeIconsHTML(pType)}</div>
+                                    <div class="user-tag">${playerNames[p]}</div>
+                                    <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${imgName}.gif" onerror="handleImgError(this, '${imgName}')">
+                                    <div class="name">${rawName}</div>
+                                    <div class="type-container">${getTypeIconsHTML(pInfo.type)}</div>
                                 </div>
-                                ${pIdx < playerNames.length - 1 ? '<div class="link-icon">🔗</div>' : ''}
+                                ${p < playerNames.length - 1 ? '<div style="color:#ff4444; font-size:1.2em;">🔗</div>' : ''}
                             `;
                         }
-
-                        const cardWidth = Math.max(300, playerNames.length * 150);
-                        htmlBuffer += `
-                            <div class="card" style="width: ${cardWidth}px;">
-                                <div class="route-header">${row[0]}</div>
-                                <div class="card-content"><div class="pair">${playerSlotsHtml}</div></div>
-                            </div>`;
+                        trackerHtml += `<div class="card"><div class="route-header">${row[0]}</div><div class="card-content"><div class="pair">${slots}</div></div></div>`;
                     }
                 }
+                board.innerHTML = trackerHtml || "<p class='empty-msg'>Keine aktiven Paare gefunden.</p>";
+                document.getElementById('last-update').innerText = "Sync: " + new Date().toLocaleTimeString();
 
-                board.innerHTML = htmlBuffer || "<p class='empty-msg'>Keine aktiven Paare gefunden.</p>";
-                statusLabel.innerText = `Echtzeit-Sync: ${new Date().toLocaleTimeString()} | Spieler: ${playerNames.join(' & ')}`;
-                
-                secondsLeft = REFRESH_SECONDS; 
-            } catch (e) {
-                console.error("Update Fehler:", e);
-                statusLabel.innerText = "Verbindung unterbrochen...";
-            }
+                // 2. Stats
+                renderBars('death-bars', json.stats.deaths);
+                renderBars('wipeout-bars', json.stats.wipeouts);
+
+            } catch (e) { console.error("Update Fehler:", e); }
         }
 
         async function init() {
-            await loadTranslations(); 
-            await update();                 
-            setInterval(() => {
-                secondsLeft--;
-                if (secondsLeft < 0) secondsLeft = 0;
-                const bar = document.getElementById('progress-bar');
-                if (bar) bar.style.width = (secondsLeft / REFRESH_SECONDS * 100) + "%";
-                if (secondsLeft === 0) update();
-            }, 1000);
+            await loadTranslations();
+            await update();
+            setInterval(update, 30000);
         }
         init();
     </script>
