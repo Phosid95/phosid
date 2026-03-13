@@ -1,5 +1,5 @@
 {
-"pokemon": [
+"pokemon": {
 "deutsch": { "en": "englisch", "type": "typ" },
 "bisasam": { "en": "bulbasaur", "type": "pflanze gift" },
 "bisaknosp": { "en": "ivysaur", "type": "pflanze gift" },
