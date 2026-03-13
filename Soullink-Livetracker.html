@@ -215,13 +215,15 @@
                 .filter(e => e[1] >= min)
                 .sort((a,b) => b[1]-a[1])
                 .map(e => {
-                    // Gold nur bei echtem Immunität-Marker (100+)
                     const isImmunity = isRes && e[1] >= 100;
                     const immClass = isImmunity ? 'immunity-chip' : '';
                     const shield = isImmunity ? '🛡️ ' : '';
-                    // Wert korrigieren für Anzeige (wenn 100+, dann durch 100 teilen)
-                    const displayVal = isImmunity ? Math.floor(e[1]/100) : e[1];
-                    return `<div class="radar-chip ${cl} ${immClass}">${shield}<img src="types/${e[0]}.png" height="10"> ${displayVal}x</div>`;
+                    
+                    // Wenn Immunität vorhanden: Zeige nur die Anzahl der Immunitäten (z.B. 1x)
+                    // Wenn keine Immunität: Zeige die normale Summe der Resistenzen
+                    const count = isImmunity ? Math.floor(e[1] / 100) : e[1];
+                    
+                    return `<div class="radar-chip ${cl} ${immClass}">${shield}<img src="types/${e[0]}.png" height="10"> ${count}x</div>`;
                 }).join('');
 
             document.getElementById('weakness-radar').innerHTML = render(weak, 3, 'weak-warning', false) || "Keine kritischen Schwächen.";
@@ -314,3 +316,4 @@
     </script>
 </body>
 </html>
+
