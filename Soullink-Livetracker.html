@@ -287,7 +287,13 @@
                     for (let p=0; p < pNames.length; p++) {
                         const rawName = String(row[p+1]).trim();
                         const info = pokemonMap[superClean(rawName)] || { en: rawName, type: "???" };
-                        const img = info.en.toLowerCase().replace(/\s+/g, '-').replace('♀','-f').replace('♂','-m');
+                        const img = info.en.toLowerCase()
+                                            .replace(/\. /g, '-')      // "Mr. Mime" -> "mr-mime"
+                                            .replace(/\s+/g, '-')      // "Mime Jr." -> "mime-jr."
+                                            .replace(/\./g, '')        // "mime-jr." -> "mime-jr"
+                                            .replace(/'/g, '')         // "Farfetch'd" -> "farfetchd"
+                                            .replace('♀','-f')
+                                            .replace('♂','-m');
                         
                         if(alive && info.type !== "???") {
                             teamDataForRadar.push({ name: rawName, typeString: info.type });
