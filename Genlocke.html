@@ -215,6 +215,13 @@
         const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbyU0JN3WPbm3SaxotIoTg2QrxR95J9X3YSkoGSFIFFXs51SdErbMSHbGaf19cL7DodLbQ/exec';
         const MISSING_NO_URL = "https://www.pngkey.com/png/full/343-3434526_missingno-missingno-sprite.png";
         let pokemonMap = {};
+        
+        // Central Data Store
+        let globalData = null; // Hält die komplette Datenbank (alle Gens + Stats)
+
+        // Neue Search Engine
+        let globalPokemonCache = null;
+        let searchTimeout = null;
 
         const typeChart = {
             normal: { weak: ['kampf'], res: [], imm: ['geist'] },
@@ -340,10 +347,6 @@
         function superClean(str) { 
             return String(str).toLowerCase().trim().replace(/[\s\t\n\r]/g, ''); 
         }
-
-        // Neue Search Engine
-        let globalPokemonCache = null;
-        let searchTimeout = null;
         
         // 1. Holt alle Daten einmalig ab und speichert sie lokal
         async function preloadAllGens() {
@@ -362,19 +365,37 @@
             }
         }
 
-        // Central Data Store
-        let globalData = null; // Hält die komplette Datenbank (alle Gens + Stats)
+        // Robustes Fetching mit automatischem Retry bei 404 / Netzwerkfehlern
+        async function fetchWithRetry(url, retries = 2, delay = 500) {
+            for (let i = 0; i <= retries; i++) {
+                try {
+                    const res = await fetch(url);
+                    if (res.ok) return await res.json();
+                } catch (e) {
+                    if (i === retries) throw e;
+                }
+                // Kurze Pause vor dem nächsten Versuch
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+            throw new Error("Fehler beim Abrufen der Daten nach mehreren Versuchen");
+        }
         
+        // Optimierte loadAllData-Funktion
         async function loadAllData() {
             try {
-                const response = await fetch(`${API_BASE_URL}?fetchAll=true`);
-                if (!response.ok) throw new Error("Fehler beim Abrufen der Daten");
+                // Falls noch gar keine Daten da sind, Ladehinweis anzeigen
+                if (!globalData) {
+                    const dashboard = document.getElementById('dashboard');
+                    if (dashboard) dashboard.innerHTML = '<p style="text-align:center; padding: 20px;">Lade Nuzlocke-Datenbank...</p>';
+                }
+        
+                // Nutzt die Retry-Logik
+                const json = await fetchWithRetry(`${API_BASE_URL}?fetchAll=true`);
                 
-                const json = await response.json();
-                globalData = json; // Speichert allData und stats
-                
-                // UI sofort mit den neuen Daten aktualisieren
-                renderCurrentPage();
+                if (json && json.allData) {
+                    globalData = json;
+                    renderCurrentPage();
+                }
             } catch (e) {
                 console.error("Sync-Fehler:", e);
             }
