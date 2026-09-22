@@ -407,6 +407,8 @@
             currentGenPairs.forEach(row => {
                 const p1 = getPokemonDetails(row.p1);
                 const p2 = getPokemonDetails(row.p2);
+                const p1Info = pokemonMap[superClean(row.p1)] || {};
+                const p2Info = pokemonMap[superClean(row.p2)] || {};
             
                 const html = `
                             <div class="card ${row.alive ? '' : 'dead-card'}">
