@@ -473,8 +473,6 @@
             document.getElementById('graveyard-list').innerHTML = graveHtml || "<p>Keine Verluste.</p>";
             document.getElementById('last-update').innerText = "Sync (" + currentGen + "): " + new Date().toLocaleTimeString();
 
-            let teamDataForRadar = [];
-
             if (typeof currentGenPairs !== 'undefined' && Array.isArray(currentGenPairs)) {
                 currentGenPairs.forEach(row => {
                     if (row.alive) {
