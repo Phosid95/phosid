@@ -374,27 +374,26 @@
                 } catch (e) {
                     if (i === retries) throw e;
                 }
-                // Kurze Pause vor dem nächsten Versuch
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
-            throw new Error("Fehler beim Abrufen der Daten nach mehreren Versuchen");
+            throw new Error("Fehler beim Abrufen der Daten");
         }
         
         // Optimierte loadAllData-Funktion
         async function loadAllData() {
             try {
-                // Falls noch gar keine Daten da sind, Ladehinweis anzeigen
-                if (!globalData) {
-                    const dashboard = document.getElementById('dashboard');
-                    if (dashboard) dashboard.innerHTML = '<p style="text-align:center; padding: 20px;">Lade Nuzlocke-Datenbank...</p>';
-                }
-        
-                // Nutzt die Retry-Logik
                 const json = await fetchWithRetry(`${API_BASE_URL}?fetchAll=true`);
-                
                 if (json && json.allData) {
                     globalData = json;
+                    
+                    // Rendert die Teampaare, den Friedhof UND das Schwächen-Radar
                     renderCurrentPage();
+        
+                    // Rendert die Stats (Death Counter & Wipeouts)
+                    if (globalData.stats) {
+                        renderBarUI('death-bars', globalData.stats.deaths);
+                        renderBarUI('wipeout-bars', globalData.stats.wipeouts);
+                    }
                 }
             } catch (e) {
                 console.error("Sync-Fehler:", e);
@@ -754,17 +753,33 @@
 
         async function init() {
             try {
-                const r = await fetch('pokemon_with_types.json?v=' + Date.now());
-                const d = await r.json();
-                const m = d.pokemon || d;
-                for (let k in m) pokemonMap[superClean(k)] = m[k];
+                // Parallel abrufen: Typen-JSON + Google Apps Script Daten gleichzeitig
+                const [typesResponse] = await Promise.all([
+                    fetch('pokemon_with_types.json?v=1.0').then(r => r.json()),
+                    loadAllData() // Startet loadAllData sofort
+                ]);
         
-                // Einmalig beim Start ALLES laden
-                await loadAllData(); 
+                // PokemonMap befüllen
+                const m = typesResponse.pokemon || typesResponse;
+                for (let k in m) {
+                    pokemonMap[superClean(k)] = m[k];
+                }
+        
+                // Einmaliges Neu-Rendern, sobald die Typen-Map garantiert im RAM liegt
+                if (globalData) {
+                    renderCurrentPage();
+                    if (globalData.stats) {
+                        renderBarUI('death-bars', globalData.stats.deaths);
+                        renderBarUI('wipeout-bars', globalData.stats.wipeouts);
+                    }
+                }
         
                 // Alle 60 Sekunden leise im Hintergrund aktualisieren
                 setInterval(loadAllData, 60000);
-            } catch (e) { console.error(e); }
+        
+            } catch (e) { 
+                console.error("Init-Fehler:", e); 
+            }
         }
         init();
     </script>
