@@ -105,7 +105,7 @@
             try {
                 // Holt den Namen des ausgewählten Tabellenblatts (z.B. Gen1, Gen2)
                 const selectedGen = document.getElementById('gen-select').value;
-                const fetchUrl = `${API_URL}${API_URL.includes('?') ? '&' : '?'}sheet=${selectedGen}`;
+                const fetchUrl = API_URL.split('?')[0] + "?sheet=" + selectedGen;
                 
                 const response = await fetch(fetchUrl, { method: "GET", redirect: "follow" });
                 const json = await response.json();
