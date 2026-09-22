@@ -237,8 +237,48 @@
             fee: { weak: ['gift', 'stahl'], res: ['kampf', 'kaefer', 'unlicht'], imm: ['drache'] }
         };
 
-        const typeColors = { normal: "#A8A77A", feuer: "#EE8130", wasser: "#6390F0", elektro: "#F7D02C", pflanze: "#7AC74C", eis: "#96D9D6", kampf: "#C22E28", gift: "#A33EA1", boden: "#E2BF65", flug: "#A98FF3", psycho: "#F95587", kaefer: "#A6B91A", gestein: "#B6A136", geist: "#735797", drache: "#6F35FC", unlicht: "#705746", stahl: "#B7B7CE", fee: "#D685AD" };
-
+        const typeColors = { normal: "#A8A77A", feuer: "#EE8130", wasser: "#6390F0", elektro: "#F7D02C", 
+                            pflanze: "#7AC74C", eis: "#96D9D6", kampf: "#C22E28", gift: "#A33EA1", boden: "#E2BF65", flug: "#A98FF3", 
+                            psycho: "#F95587", kaefer: "#A6B91A", gestein: "#B6A136", geist: "#735797", drache: "#6F35FC", unlicht: "#705746", stahl: "#B7B7CE", fee: "#D685AD" };
+        
+        // Eure Fallback-Funktion für Bildfehler
+        function handleImgError(imgElement, enName) {
+            if (!enName) {
+                imgElement.src = MISSING_NO_URL;
+                imgElement.onerror = null;
+                return;
+            }
+            const cleanEn = enName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            
+            if (imgElement.src.includes('showdown')) {
+                imgElement.src = `https://img.pokemondb.net/sprites/scarlet-violet/normal/${cleanEn}.png`;
+            } else if (imgElement.src.includes('scarlet-violet')) {
+                imgElement.src = `https://img.pokemondb.net/sprites/x-y/normal/${cleanEn}.png`;
+            } else {
+                imgElement.src = MISSING_NO_URL;
+                imgElement.onerror = null; // Verhindert Endlosschleifen
+            }
+        }
+        
+        // Hilfsfunktion zur Ermittlung des Sprite-HTMLs
+        function getPokemonSpriteHTML(rawName) {
+            if (!rawName) return `<img src="${MISSING_NO_URL}" class="pokemon-sprite" alt="Unbekannt">`;
+        
+            const cleanKey = superClean(rawName);
+            const info = pokemonMap[cleanKey] || {};
+        
+            // Priorität 1: Bereits vorhandene Sprite-URL aus eurer JSON
+            if (info.sprite) {
+                return `<img src="${info.sprite}" class="pokemon-sprite" alt="${rawName}" onerror="handleImgError(this, '${info.en || rawName}')">`;
+            }
+        
+            // Priorität 2: Englischer Name für Showdown GIFs
+            const enName = (info.en || rawName).toLowerCase().replace(/[^a-z0-9]/g, '');
+            const showdownUrl = `https://play.pokemonshowdown.com/sprites/gen5/${enName}.png`;
+        
+            return `<img src="${showdownUrl}" class="pokemon-sprite" alt="${rawName}" onerror="handleImgError(this, '${enName}')">`;
+        }
+        
         // Hilfsfunktion zum Abrufen von Sprite-URL & Typen-Info
         function getPokemonDetails(rawName) {
             if (!rawName) return { name: '—', sprite: '', type: '???' };
@@ -369,30 +409,30 @@
                 const p2 = getPokemonDetails(row.p2);
             
                 const html = `
-                    <div class="card ${row.alive ? '' : 'dead-card'}">
-                        <div class="route-header">${row.route}</div>
-                        <div class="card-content">
-                            <div class="pair">
-                                <!-- Linkes Pokémon (Riirex) -->
-                                <div class="slot">
-                                    <div class="user-tag riirex">Riirex</div>
-                                    ${p1.sprite ? `<img src="${p1.sprite}" class="pokemon-sprite" alt="${p1.name}">` : ''}
-                                    <div class="name">${p1.name}</div>
-                                    <div class="type-container">${getTypeIconsHTML(p1.type)}</div>
+                            <div class="card ${row.alive ? '' : 'dead-card'}">
+                                <div class="route-header">${row.route}</div>
+                                <div class="card-content">
+                                    <div class="pair">
+                                        <!-- Riirex -->
+                                        <div class="slot">
+                                            <div class="user-tag riirex">Riirex</div>
+                                            ${getPokemonSpriteHTML(row.p1)}
+                                            <div class="name">${row.p1 || '—'}</div>
+                                            <div class="type-container">${getTypeIconsHTML(p1Info.type)}</div>
+                                        </div>
+                        
+                                        <div class="link-icon">🔗</div>
+                        
+                                        <!-- Zepho -->
+                                        <div class="slot">
+                                            <div class="user-tag zepho">Zepho</div>
+                                            ${getPokemonSpriteHTML(row.p2)}
+                                            <div class="name">${row.p2 || '—'}</div>
+                                            <div class="type-container">${getTypeIconsHTML(p2Info.type)}</div>
+                                        </div>
+                                    </div>
                                 </div>
-            
-                                <div class="link-icon">🔗</div>
-            
-                                <!-- Rechtes Pokémon (Zepho) -->
-                                <div class="slot">
-                                    <div class="user-tag zepho">Zepho</div>
-                                    ${p2.sprite ? `<img src="${p2.sprite}" class="pokemon-sprite" alt="${p2.name}">` : ''}
-                                    <div class="name">${p2.name}</div>
-                                    <div class="type-container">${getTypeIconsHTML(p2.type)}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>`;
+                            </div>`;
             
                 if (row.alive) teamHtml += html; else graveHtml += html;
             });
