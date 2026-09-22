@@ -542,73 +542,75 @@
             const mainDashboard = document.getElementById('dashboard');
             const pageTitle = document.getElementById('page-title');
         
+            // Wenn weniger als 2 Zeichen getippt wurden -> Suche ausblenden, Team anzeigen
             if (trimmed.length < 2) {
                 if (searchPage) searchPage.style.display = 'none';
-                if (mainDashboard) mainDashboard.style.display = 'grid';
+                if (mainDashboard) mainDashboard.style.display = 'flex';
                 if (pageTitle) pageTitle.style.display = 'block';
                 return;
             }
         
+            // Suchseite einblenden, Haupt-Dashboard ausblenden
             if (searchPage) searchPage.style.display = 'block';
             if (mainDashboard) mainDashboard.style.display = 'none';
             if (pageTitle) pageTitle.style.display = 'none';
         
             if (!globalData || !globalData.allData) return;
         
+            // Pokémon in globalData.allData filtern
             const results = globalData.allData.filter(item => 
                 (item.p1 && item.p1.toLowerCase().includes(trimmed)) || 
                 (item.p2 && item.p2.toLowerCase().includes(trimmed))
             );
         
-            // Ergebnisse rendern...
-            renderSearchResults(results);
+            renderSearchResults(results, query);
         }
 
-        function renderSearchResults(query) {
-            const container = document.getElementById('search-results'); // Oder die ID deines Ergebnis-Containers
+        function renderSearchResults(results, query) {
+            // Richtige HTML-ID nutzen: search-results-list
+            const container = document.getElementById('search-results-list');
             if (!container) return;
         
-            if (!query || query.trim() === '') {
-                container.innerHTML = 'Gib einen Namen ein...';
+            if (!results || results.length === 0) {
+                container.innerHTML = `<p style="color: #888; text-align: center; width: 100%;">Kein Pokémon für "${query}" gefunden.</p>`;
                 return;
             }
         
-            const cleanQuery = superClean(query);
             let resultsHTML = '';
-            let matchCount = 0;
         
-            // Wir durchsuchen alle Generationen/Paare nach dem Namen
-            Object.keys(allGensData || {}).forEach(genKey => {
-                const pairs = allGensData[genKey] || [];
-                pairs.forEach(row => {
-                    const p1Match = row.p1 && superClean(row.p1).includes(cleanQuery);
-                    const p2Match = row.p2 && superClean(row.p2).includes(cleanQuery);
+            results.forEach(row => {
+                const p1Info = pokemonMap[superClean(row.p1)] || {};
+                const p2Info = pokemonMap[superClean(row.p2)] || {};
         
-                    if (p1Match || p2Match) {
-                        matchCount++;
-                        const p1Info = pokemonMap[superClean(row.p1)] || {};
-                        const p2Info = pokemonMap[superClean(row.p2)] || {};
-        
-                        resultsHTML += `
-                            <div class="search-result-card" style="background: #222; padding: 10px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <strong style="color: #ffc107;">[${genKey.toUpperCase()}]</strong> 
-                                    <span>${row.p1 || '???'} & ${row.p2 || '???'}</span>
+                resultsHTML += `
+                    <div class="card ${row.alive ? '' : 'dead-card'}" style="margin-bottom: 15px;">
+                        <div class="route-header">[${(row.gen || '').toUpperCase()}] - ${row.route || 'Unbekannte Route'}</div>
+                        <div class="card-content">
+                            <div class="pair">
+                                <!-- Riirex -->
+                                <div class="slot">
+                                    <div class="user-tag riirex">Riirex</div>
+                                    ${getPokemonSpriteHTML(row.p1)}
+                                    <div class="name">${row.p1 || '—'}</div>
+                                    <div class="type-container">${getTypeIconsHTML(p1Info.type)}</div>
                                 </div>
-                                <span style="font-size: 0.8em; color: ${row.alive ? '#4caf50' : '#f44336'};">
-                                    ${row.alive ? 'Lebendig' : 'Verstorben'}
-                                </span>
+        
+                                <div class="link-icon">🔗</div>
+        
+                                <!-- Zepho -->
+                                <div class="slot">
+                                    <div class="user-tag zepho">Zepho</div>
+                                    ${getPokemonSpriteHTML(row.p2)}
+                                    <div class="name">${row.p2 || '—'}</div>
+                                    <div class="type-container">${getTypeIconsHTML(p2Info.type)}</div>
+                                </div>
                             </div>
-                        `;
-                    }
-                });
+                        </div>
+                    </div>
+                `;
             });
         
-            if (matchCount === 0) {
-                container.innerHTML = `<p style="color: #888;">Kein Pokémon für "${query}" gefunden.</p>`;
-            } else {
-                container.innerHTML = resultsHTML;
-            }
+            container.innerHTML = resultsHTML;
         }
 
         function changeGen(gen) {
