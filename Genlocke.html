@@ -472,7 +472,25 @@
             document.getElementById('dashboard').innerHTML = teamHtml || "<p>Keine aktiven Pokémon.</p>";
             document.getElementById('graveyard-list').innerHTML = graveHtml || "<p>Keine Verluste.</p>";
             document.getElementById('last-update').innerText = "Sync (" + currentGen + "): " + new Date().toLocaleTimeString();
-        
+
+            let teamDataForRadar = [];
+
+            if (typeof currentGenPairs !== 'undefined' && Array.isArray(currentGenPairs)) {
+                currentGenPairs.forEach(row => {
+                    if (row.alive) {
+                        const p1Info = pokemonMap[superClean(row.p1)] || {};
+                        const p2Info = pokemonMap[superClean(row.p2)] || {};
+            
+                        if (row.p1 && p1Info.type) {
+                            teamDataForRadar.push({ name: row.p1, typeString: String(p1Info.type) });
+                        }
+                        if (row.p2 && p2Info.type) {
+                            teamDataForRadar.push({ name: row.p2, typeString: String(p2Info.type) });
+                        }
+                    }
+                });
+            }
+            
             // Stats & Schwächen-Radar berechnen
             calculateRadar(teamDataForRadar);
         
@@ -539,42 +557,19 @@
         }
 
         function calculateRadar(teamData) {
+            if (!teamData || !Array.isArray(teamData)) return;
+        
             let weak = {}; let superWeak = {}; let res = {}; let imm = {}; 
             let sources = { weak: {}, superWeak: {}, res: {}, imm: {} };
-            let teamDataForRadar = [];
-
-            currentGenPairs.forEach(row => {
-                    if (row.alive) {
-                        const p1Info = pokemonMap[superClean(row.p1)] || {};
-                        const p2Info = pokemonMap[superClean(row.p2)] || {};
-                
-                        // p1Info.type enthält z.B. "Feuer / Flug" oder "Wasser"
-                        if (row.p1 && p1Info.type) {
-                            teamDataForRadar.push({ 
-                                name: row.p1, 
-                                typeString: String(p1Info.type) 
-                            });
-                        }
-                        if (row.p2 && p2Info.type) {
-                            teamDataForRadar.push({ 
-                                name: row.p2, 
-                                typeString: String(p2Info.type) 
-                            });
-                        }
-                    }
-                });
-                
-                // Jetzt die calculateRadar mit den aufbereiteten Daten aufrufen:
-                if (typeof calculateRadar === 'function') {
-                    calculateRadar(teamDataForRadar);
-                }
-            
+        
             teamData.forEach(p => {
+                if (!p.typeString) return;
+        
                 const types = p.typeString.split(/[\s/]+/).map(t => {
                     let ct = superClean(t);
                     return (ct === 'käfer' || ct === 'kaefer') ? 'kaefer' : ct;
                 }).filter(t => typeChart[t]);
-
+        
                 Object.keys(typeChart).forEach(attackingType => {
                     let multiplier = 1.0;
                     types.forEach(defendingType => {
@@ -582,7 +577,7 @@
                         if (typeChart[defendingType].res.includes(attackingType)) multiplier *= 0.5;
                         if (typeChart[defendingType].imm.includes(attackingType)) multiplier *= 0.0;
                     });
-
+        
                     if (multiplier === 4.0) {
                         superWeak[attackingType] = (superWeak[attackingType] || 0) + 1;
                         if(!sources.superWeak[attackingType]) sources.superWeak[attackingType] = [];
@@ -604,6 +599,35 @@
                     }
                 });
             });
+        
+            const renderChip = (type, count, cl, isImm, isSuper, sourceList) => {
+                const specialClass = isImm ? 'immunity-chip' : (isSuper ? 'super-weak-chip' : '');
+                const prefix = isImm ? '🛡️ ' : (isSuper ? '⚠️ 4x ' : '');
+                const tooltip = sourceList ? `title="${sourceList.join(', ')}"` : '';
+                return `<div class="radar-chip ${cl}${specialClass}" ${tooltip}>${prefix}<img src="types/${type}.png" height="10"> ${count}x</div>`;
+            };
+        
+            let weakHTML = "";
+            Object.entries(superWeak).sort((a,b) => b[1]-a[1]).forEach(([type, count]) => {
+                weakHTML += renderChip(type, count, 'weak-warning', false, true, sources.superWeak[type]);
+            });
+            Object.entries(weak).filter(e => e[1] >= 3).sort((a,b) => b[1]-a[1]).forEach(([type, count]) => {
+                weakHTML += renderChip(type, count, 'weak-warning', false, false, sources.weak[type]);
+            });
+        
+            let resHTML = "";
+            Object.entries(imm).sort((a,b) => b[1]-a[1]).forEach(([type, count]) => {
+                resHTML += renderChip(type, count, 'res-info', true, false, sources.imm[type]);
+            });
+            Object.entries(res).sort((a,b) => b[1]-a[1]).forEach(([type, count]) => {
+                resHTML += renderChip(type, count, 'res-info', false, false, sources.res[type]);
+            });
+        
+            const weakElem = document.getElementById('weakness-radar');
+            const resElem = document.getElementById('resistance-radar');
+            if (weakElem) weakElem.innerHTML = weakHTML || "Keine kritischen Schwächen.";
+            if (resElem) resElem.innerHTML = resHTML || "Keine Resistenzen.";
+        }
 
             const renderChip = (type, count, cl, isImm, isSuper, sourceList) => {
                 const specialClass = isImm ? 'immunity-chip' : (isSuper ? 'super-weak-chip' : '');
