@@ -212,7 +212,7 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbwh-1CirbHAw9mcXLsmng8rvHRsdb6giLz2HTTSTviGatxxsq1RsSXbnBv0k8JQkYcqag/exec';
+        const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbyU0JN3WPbm3SaxotIoTg2QrxR95J9X3YSkoGSFIFFXs51SdErbMSHbGaf19cL7DodLbQ/exec';
         const MISSING_NO_URL = "https://www.pngkey.com/png/full/343-3434526_missingno-missingno-sprite.png";
         let pokemonMap = {};
 
@@ -283,15 +283,95 @@
             }
         }
 
-        // 2. Schnelle Suche direkt im lokalen Cache (0ms Verzögerung)
-        async function handleSearch(query) {
-            const trimmed = query.trim().toLowerCase();
+        // Central Data Store
+        let globalData = null; // Hält die komplette Datenbank (alle Gens + Stats)
         
+        async function loadAllData() {
+            try {
+                const response = await fetch(`${API_BASE_URL}?fetchAll=true`);
+                if (!response.ok) throw new Error("Fehler beim Abrufen der Daten");
+                
+                const json = await response.json();
+                globalData = json; // Speichert allData und stats
+                
+                // UI sofort mit den neuen Daten aktualisieren
+                renderCurrentPage();
+            } catch (e) {
+                console.error("Sync-Fehler:", e);
+            }
+        }
+
+        function renderCurrentPage() {
+            if (!globalData || !globalData.allData) return;
+        
+            const currentGen = getSelectedGen();
+            const genSelect = document.getElementById('gen-select');
+            if (genSelect) genSelect.value = currentGen;
+        
+            const pageTitle = document.getElementById('page-title');
+            if (pageTitle) pageTitle.innerText = `Aktive Links (${currentGen})`;
+        
+            // Daten für die aktuell gewählte Gen aus dem Speicher filtern
+            const currentGenPairs = globalData.allData.filter(item => item.gen === currentGen);
+        
+            let teamHtml = "";
+            let graveHtml = "";
+            let teamDataForRadar = [];
+            let typeCounts = {};
+        
+            currentGenPairs.forEach(row => {
+                // Logik für Team-Cards & Friedhof aus deinen Daten...
+                const p1Info = pokemonMap[superClean(row.p1)] || { en: row.p1, type: "???" };
+                const p2Info = pokemonMap[superClean(row.p2)] || { en: row.p2, type: "???" };
+        
+                if (row.alive) {
+                    if (p1Info.type !== "???") teamDataForRadar.push({ name: row.p1, typeString: p1Info.type });
+                    if (p2Info.type !== "???") teamDataForRadar.push({ name: row.p2, typeString: p2Info.type });
+                }
+        
+                const html = `
+                    <div class="card ${row.alive ? '' : 'dead-card'}">
+                        <div class="route-header">${row.route}</div>
+                        <div class="card-content">
+                            <div class="pair">
+                                <div class="slot">
+                                    <div class="user-tag riirex">Riirex</div>
+                                    <div class="name">${row.p1 || '—'}</div>
+                                    <div class="type-container">${getTypeIconsHTML(p1Info.type)}</div>
+                                </div>
+                                <div class="link-icon">🔗</div>
+                                <div class="slot">
+                                    <div class="user-tag zepho">Zepho</div>
+                                    <div class="name">${row.p2 || '—'}</div>
+                                    <div class="type-container">${getTypeIconsHTML(p2Info.type)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+        
+                if (row.alive) teamHtml += html; else graveHtml += html;
+            });
+        
+            document.getElementById('dashboard').innerHTML = teamHtml || "<p>Keine aktiven Pokémon.</p>";
+            document.getElementById('graveyard-list').innerHTML = graveHtml || "<p>Keine Verluste.</p>";
+            document.getElementById('last-update').innerText = "Sync (" + currentGen + "): " + new Date().toLocaleTimeString();
+        
+            // Stats & Schwächen-Radar berechnen
+            calculateRadar(teamDataForRadar);
+        
+            // Globale Stats (Wipeouts/Deaths) rendern
+            if (globalData.stats) {
+                renderBarUI('death-bars', globalData.stats.deaths);
+                renderBarUI('wipeout-bars', globalData.stats.wipeouts);
+            }
+        }
+        
+        function handleSearch(query) {
+            const trimmed = query.trim().toLowerCase();
             const searchPage = document.getElementById('search-results-page');
             const mainDashboard = document.getElementById('dashboard');
             const pageTitle = document.getElementById('page-title');
         
-            // Weniger als 2 Zeichen -> Normale Ansicht zeigen
             if (trimmed.length < 2) {
                 if (searchPage) searchPage.style.display = 'none';
                 if (mainDashboard) mainDashboard.style.display = 'grid';
@@ -299,152 +379,27 @@
                 return;
             }
         
-            // Such-Ansicht aktivieren
             if (searchPage) searchPage.style.display = 'block';
             if (mainDashboard) mainDashboard.style.display = 'none';
             if (pageTitle) pageTitle.style.display = 'none';
         
-            const list = document.getElementById('search-results-list');
+            if (!globalData || !globalData.allData) return;
         
-            // Falls der Cache noch nicht geladen ist, Ladehinweis anzeigen
-            if (!globalPokemonCache) {
-                list.innerHTML = "<p style='text-align:center;'>Lade Datenbank für Sofort-Suche...</p>";
-            }
-        
-            // Daten aus dem Cache holen (lädt nur beim allerersten Aufruf einmalig)
-            const allData = await preloadAllGens();
-        
-            // Lokal im Arbeitsspeicher filtern
-            const results = allData.filter(item => 
+            const results = globalData.allData.filter(item => 
                 (item.p1 && item.p1.toLowerCase().includes(trimmed)) || 
                 (item.p2 && item.p2.toLowerCase().includes(trimmed))
             );
         
-            if (results.length === 0) {
-                list.innerHTML = "<p style='text-align:center;'>Keine Pokémon gefunden.</p>";
-                return;
-            }
-        
-            // Ergebnisse sofort rendern
-            list.innerHTML = results.map(item => `
-                <div style="background:#222; border:1px solid #444; padding:12px 18px; margin:8px 0; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <span style="color:#ffd700; font-weight:bold; font-size:0.9em;">[${item.gen}]</span> 
-                        <span style="color:#aaa; font-size:0.9em;">${item.route}</span>
-                        <div style="margin-top:6px; font-size:1.1em;">
-                            <span style="color:#5c9cff; font-weight:bold;">Riirex:</span> ${item.p1 || '—'} 
-                            <span style="margin:0 8px;">🔗</span> 
-                            <span style="color:#ff69b4; font-weight:bold;">Zepho:</span> ${item.p2 || '—'}
-                        </div>
-                    </div>
-                    <div>
-                        ${item.alive 
-                            ? '<span style="color:#28a745; background:rgba(40,167,69,0.15); border:1px solid #28a745; padding:4px 10px; border-radius:12px; font-size:0.85em; font-weight:bold;">🟢 Lebend</span>' 
-                            : '<span style="color:#dc3545; background:rgba(220,53,69,0.15); border:1px solid #dc3545; padding:4px 10px; border-radius:12px; font-size:0.85em; font-weight:bold;">💀 Gefallen</span>'}
-                    </div>
-                </div>
-            `).join('');
+            // Ergebnisse rendern...
+            renderSearchResults(results);
         }
 
-        
-        
-        // function handleSearch(query) {
-        //     clearTimeout(searchTimeout);
-        //     const trimmed = query.trim().toLowerCase();
-        
-        //     const searchPage = document.getElementById('search-results-page');
-        //     const mainDashboard = document.getElementById('dashboard');
-        //     const pageTitle = document.getElementById('page-title');
-        
-        //     if (trimmed.length < 2) {
-        //         if (searchPage) searchPage.style.display = 'none';
-        //         if (mainDashboard) mainDashboard.style.display = 'grid';
-        //         if (pageTitle) pageTitle.style.display = 'block';
-        //         return;
-        //     }
-        
-        //     // Hauptinhalte verbergen, wenn Ergebnisse angezeigt werden
-        //     if (searchPage) searchPage.style.display = 'block';
-        //     if (mainDashboard) mainDashboard.style.display = 'none';
-        //     if (pageTitle) pageTitle.style.display = 'none';
-        
-        //     document.getElementById('search-results-list').innerHTML = "<p>Suche in allen Generationen läuft...</p>";
-        
-        //     searchTimeout = setTimeout(async () => {
-        //         try {
-        //             const res = await fetch(`${API_BASE_URL}?search=${encodeURIComponent(trimmed)}`);
-        //             if (!res.ok) throw new Error("Fehler bei der Suchanfrage");
-        //             const json = await res.json();
-                    
-        //             const list = document.getElementById('search-results-list');
-        //             if (!json.results || json.results.length === 0) {
-        //                 list.innerHTML = "<p>Keine Pokémon gefunden.</p>";
-        //                 return;
-        //             }
-        
-        //             list.innerHTML = json.results.map(item => `
-        //                 <div style="background:#222; border:1px solid #444; padding:12px; margin:8px 0; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
-        //                     <div>
-        //                         <span style="color:#ffd700; font-weight:bold;">[${item.gen}]</span> 
-        //                         <span style="color:#aaa;">${item.route}</span>
-        //                         <div style="margin-top:5px; font-size:1.1em;">
-        //                             <span style="color:#5c9cff; font-weight:bold;">Riirex:</span> ${item.p1 || '—'} 🔗 
-        //                             <span style="color:#ff69b4; font-weight:bold;">Zepho:</span> ${item.p2 || '—'}
-        //                         </div>
-        //                     </div>
-        //                     <div>
-        //                         ${item.alive ? '<span style="color:#28a745; background:rgba(40,167,69,0.2); padding:4px 8px; border-radius:4px;">🟢 Lebend</span>' 
-        //                                      : '<span style="color:#dc3545; background:rgba(220,53,69,0.2); padding:4px 8px; border-radius:4px;">💀 Gefallen</span>'}
-        //                     </div>
-        //                 </div>
-        //             `).join('');
-        //         } catch (e) {
-        //             console.error("Such-Fehler:", e);
-        //             document.getElementById('search-results-list').innerHTML = "<p style='color:orange;'>Suchanfrage fehlgeschlagen. Bitte erneut tippen.</p>";
-        //         }
-        //     }, 300);
-        // }
-        
-        /* Lade alle Generationen einmalig beim ersten Laden/Suchen
-        async function preloadAllGens() {
-            if (globalPokemonCache) return globalPokemonCache; // Bereit aus dem Cache
-        
-            try {
-                const response = await fetch(`${API_BASE_URL}?fetchAll=true`);
-                if (!response.ok) throw new Error("Fehler beim Preload");
-                const json = await response.json();
-                globalPokemonCache = json.allData || [];
-                return globalPokemonCache;
-            } catch (e) {
-                console.error("Cache-Ladefehler:", e);
-                return [];
-            }
-        }*/
-        
-        /*function renderSearchResults(results) {
-            const container = document.getElementById('search-results-list');
-            if (results.length === 0) {
-                container.innerHTML = "<p>Keine Treffer in allen Generationen gefunden.</p>";
-                return;
-            }
-        
-            container.innerHTML = results.map(item => `
-                <div class="search-card">
-                    <div class="search-card-header">
-                        <span>📍 ${item.gen}</span>
-                        <span>🗺️ ${item.route}</span>
-                    </div>
-                    <div class="search-card-pair">
-                        <span><span class="user-tag riirex">Riirex:</span> ${item.p1 || '—'}</span>
-                        <span>🔗</span>
-                        <span><span class="user-tag zepho">Zepho:</span> ${item.p2 || '—'}</span>
-                    </div>
-                    <span class="status-badge ${item.alive ? 'status-alive' : 'status-dead'}">
-                        ${item.alive ? '🟢 Lebend / Aktiv' : '💀 Gefallen / Friedhof'}
-                    </span>
-                </div>
-            `).join('');
-        }*/
+        function changeGen(gen) {
+            const url = new URL(window.location);
+            url.searchParams.set('sheet', gen);
+            window.history.pushState({}, '', url);
+            renderCurrentPage(); // Rendert sofort aus dem Arbeitsspeicher!
+        }
 
         function handleImgError(imgElement, enName) {
             if (imgElement.src.includes('black-white')) {
@@ -674,8 +629,12 @@
                 const d = await r.json();
                 const m = d.pokemon || d;
                 for (let k in m) pokemonMap[superClean(k)] = m[k];
-                await update(); 
-                setInterval(update, 60000);
+        
+                // Einmalig beim Start ALLES laden
+                await loadAllData(); 
+        
+                // Alle 60 Sekunden leise im Hintergrund aktualisieren
+                setInterval(loadAllData, 60000);
             } catch (e) { console.error(e); }
         }
         init();
