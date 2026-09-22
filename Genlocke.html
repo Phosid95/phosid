@@ -248,15 +248,26 @@
                 imgElement.onerror = null;
                 return;
             }
-            const cleanEn = enName.toLowerCase().replace(/[^a-z0-9]/g, '');
-            
-            if (imgElement.src.includes('showdown')) {
-                imgElement.src = `https://img.pokemondb.net/sprites/scarlet-violet/normal/${cleanEn}.png`;
+        
+            // Namen bereinigen (z.B. "Mr. Mime" -> "mrmime", "Nidoran♀" -> "nidoran-f")
+            let clean = enName.toLowerCase()
+                .replace(/♀/g, '-f')
+                .replace(/♂/g, '-m')
+                .replace(/[^a-z0-9-]/g, '');
+        
+            if (imgElement.src.includes('black-white/anim')) {
+                // Fallback 1: Falls die BW-Animation fehlt -> Showdown Animated GIF
+                imgElement.src = `https://play.pokemonshowdown.com/sprites/ani/${clean}.gif`;
+            } else if (imgElement.src.includes('showdown')) {
+                // Fallback 2: Scarlet & Violet Standbild
+                imgElement.src = `https://img.pokemondb.net/sprites/scarlet-violet/normal/${clean}.png`;
             } else if (imgElement.src.includes('scarlet-violet')) {
-                imgElement.src = `https://img.pokemondb.net/sprites/x-y/normal/${cleanEn}.png`;
+                // Fallback 3: Gen 6 X/Y Standbild
+                imgElement.src = `https://img.pokemondb.net/sprites/x-y/normal/${clean}.png`;
             } else {
+                // Fallback 4: Pokéball Icon (MissingNo) & Error-Handler stoppen
                 imgElement.src = MISSING_NO_URL;
-                imgElement.onerror = null; // Verhindert Endlosschleifen
+                imgElement.onerror = null;
             }
         }
         
