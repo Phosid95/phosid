@@ -563,6 +563,53 @@
             renderSearchResults(results);
         }
 
+        function renderSearchResults(query) {
+            const container = document.getElementById('search-results'); // Oder die ID deines Ergebnis-Containers
+            if (!container) return;
+        
+            if (!query || query.trim() === '') {
+                container.innerHTML = 'Gib einen Namen ein...';
+                return;
+            }
+        
+            const cleanQuery = superClean(query);
+            let resultsHTML = '';
+            let matchCount = 0;
+        
+            // Wir durchsuchen alle Generationen/Paare nach dem Namen
+            Object.keys(allGensData || {}).forEach(genKey => {
+                const pairs = allGensData[genKey] || [];
+                pairs.forEach(row => {
+                    const p1Match = row.p1 && superClean(row.p1).includes(cleanQuery);
+                    const p2Match = row.p2 && superClean(row.p2).includes(cleanQuery);
+        
+                    if (p1Match || p2Match) {
+                        matchCount++;
+                        const p1Info = pokemonMap[superClean(row.p1)] || {};
+                        const p2Info = pokemonMap[superClean(row.p2)] || {};
+        
+                        resultsHTML += `
+                            <div class="search-result-card" style="background: #222; padding: 10px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="color: #ffc107;">[${genKey.toUpperCase()}]</strong> 
+                                    <span>${row.p1 || '???'} & ${row.p2 || '???'}</span>
+                                </div>
+                                <span style="font-size: 0.8em; color: ${row.alive ? '#4caf50' : '#f44336'};">
+                                    ${row.alive ? 'Lebendig' : 'Verstorben'}
+                                </span>
+                            </div>
+                        `;
+                    }
+                });
+            });
+        
+            if (matchCount === 0) {
+                container.innerHTML = `<p style="color: #888;">Kein Pokémon für "${query}" gefunden.</p>`;
+            } else {
+                container.innerHTML = resultsHTML;
+            }
+        }
+
         function changeGen(gen) {
             const url = new URL(window.location);
             url.searchParams.set('sheet', gen);
