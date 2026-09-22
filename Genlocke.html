@@ -127,11 +127,16 @@
 
                 for (let i = 1; i < pairs.length; i++) {
                     const row = pairs[i]; 
-                    if (!row || !row[0]) continue;
+                    if (!row) continue;
                     
+                    // NEU: Wenn kein Pokémon eingetragen wurde (Spalte B und C leer), überspringe die Route
+                    const p1_raw = row[1] ? String(row[1]).trim() : "";
+                    const p2_raw = row[2] ? String(row[2]).trim() : "";
+                    if (!p1_raw && !p2_raw) continue; 
+                
                     const alive = (row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE');
                     let slots = "";
-
+                
                     for (let p = 0; p < pNames.length; p++) {
                         const rawName = String(row[p+1]).trim();
                         if(!rawName) continue;
@@ -152,20 +157,21 @@
                                 typeCounts[ct] = (typeCounts[ct] || 0) + 1; 
                             });
                         }
-
+                
+                        // HIER SIND DIE KORREKTEN BACKTICKS FÜR DAS POKÉMON-SLOT:
                         slots += `
                             <div class="slot">
-                                <div class="user-tag">\${pNames[p]}</div>
-                                <a href="https://pokewiki.de\${rawName.replace(/\s+/g, '-')}" target="_blank">
-                                    <img src="https://pokemondb.net\({img}.gif" class="poke-sprite" onerror="handleImgError(this, '\){img}')">
+                                <div class="user-tag">${pNames[p]}</div>
+                                <a href="https://pokewiki.de{rawName.replace(/\s+/g, '-')}" target="_blank">
+                                    <img src="https://pokemondb.net{img}.gif" class="poke-sprite" onerror="handleImgError(this, '${img}')">
                                 </a>
-                                <div class="name">\${rawName}</div>
-                                <div class="type-container">\${getTypeIconsHTML(info.type)}</div>
+                                <div class="name">${rawName}</div>
+                                <div class="type-container">${getTypeIconsHTML(info.type)}</div>
                             </div>
-                            \${p < pNames.length - 1 ? '<div class="link-icon">🔗</div>' : ''}`; // Backtick am Ende!
+                            ${p < pNames.length - 1 ? '<div class="link-icon">🔗</div>' : ''}`;
                     }
-
-                    // WICHTIG: Auch hier müssen am Anfang und Ende Backticks ` genutzt werden!
+                
+                    // HIER SIND DIE BACKTICKS FÜR DIE GESAMTE KARTE:
                     const html = `<div class="card ${alive ? '' : 'dead-card'}"><div class="route-header">${row[0]}</div><div class="card-content"><div class="pair">${slots}</div></div></div>`;
                     
                     if(alive) teamHtml += html; else graveHtml += html;
