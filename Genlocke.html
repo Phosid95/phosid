@@ -491,12 +491,48 @@
             
             // Stats & Schwächen-Radar berechnen
             calculateRadar(teamDataForRadar);
-        
+            renderTypeDistribution(teamData);
+            
             // Globale Stats (Wipeouts/Deaths) rendern
             if (globalData.stats) {
                 renderBarUI('death-bars', globalData.stats.deaths);
                 renderBarUI('wipeout-bars', globalData.stats.wipeouts);
             }
+        }
+
+        function renderTypeDistribution(teamData) {
+            const container = document.getElementById('type-distribution'); // Prüfe kurz, ob dein HTML-Div id="type-distribution" hat
+            if (!container) return;
+        
+            let typeCounts = {};
+        
+            // Zähle die Typen aller lebenden Team-Pokémon
+            teamData.forEach(p => {
+                if (!p.typeString) return;
+                
+                const types = p.typeString.split(/[\s/]+/).map(t => {
+                    let ct = superClean(t);
+                    return (ct === 'käfer' || ct === 'kaefer') ? 'kaefer' : ct;
+                });
+        
+                types.forEach(t => {
+                    if (t) typeCounts[t] = (typeCounts[t] || 0) + 1;
+                });
+            });
+        
+            let html = "";
+            Object.entries(typeCounts).sort((a, b) => b[1] - a[1]).forEach(([type, count]) => {
+                html += `
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <img src="types/${type}.png" height="14">
+                            <span style="text-transform: capitalize; font-size: 0.9em; color: #ccc;">${type}</span>
+                        </div>
+                        <span style="font-weight: bold; color: #ffc107;">${count}x</span>
+                    </div>`;
+            });
+        
+            container.innerHTML = html || "<p style='color:#777; font-size:0.8em;'>Keine aktiven Pokémon im Team.</p>";
         }
         
         function handleSearch(query) {
