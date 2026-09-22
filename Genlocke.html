@@ -319,6 +319,32 @@
             }
         }
 
+        function renderBarUI(containerId, statsData) {
+            const container = document.getElementById(containerId);
+            if (!container || !statsData) return;
+        
+            // statsData erwartet das Format der Stats-Tabelle aus Google Sheets
+            let html = "";
+            statsData.forEach(row => {
+                if (!row[0]) return;
+                const label = row[0];
+                const count = row[1] || 0;
+                
+                html += `
+                    <div style="margin-bottom: 8px;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.85em; margin-bottom:2px;">
+                            <span>${label}</span>
+                            <span style="font-weight:bold;">${count}</span>
+                        </div>
+                        <div style="background:#333; height:8px; border-radius:4px; overflow:hidden;">
+                            <div style="background:#dc3545; width:${Math.min(count * 10, 100)}%; height:100%;"></div>
+                        </div>
+                    </div>`;
+            });
+        
+            container.innerHTML = html;
+        }
+
         function renderCurrentPage() {
             if (!globalData || !globalData.allData) return;
         
