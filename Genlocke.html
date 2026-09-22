@@ -105,6 +105,57 @@
 
         #type-distribution { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
         .type-stat-card { background: rgba(255,255,255,0.03); border-left: 4px solid #555; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+
+        .search-container { position: relative; display: flex; align-items: center; }
+        #poke-search {
+            background: #1e1e1e;
+            border: 1px solid var(--primary);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            outline: none;
+            width: 180px;
+            transition: width 0.3s ease;
+        }
+        #poke-search:focus { width: 230px; box-shadow: 0 0 8px var(--primary); }
+        
+        .search-card {
+            background: var(--card);
+            border: 1px solid #444;
+            border-radius: 10px;
+            padding: 15px;
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .search-card-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75em;
+            font-weight: bold;
+            color: var(--primary);
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+        .search-card-pair {
+            font-size: 1.1em;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        .status-badge {
+            align-self: flex-start;
+            font-size: 0.65em;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+        .status-alive { background: rgba(0, 200, 81, 0.2); color: var(--success); border: 1px solid var(--success); }
+        .status-dead { background: rgba(255, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+        
     </style>
 </head>
 <body>
@@ -125,6 +176,10 @@
             <option value="Gen9">Gen 9</option>
         </select>
     </nav>
+    <div id="search-results-page" class="page">
+        <h1>Suchergebnisse</h1>
+        <div id="search-results-list" class="stats-grid">Gib einen Namen ein...</div>
+    </div>
     <div id="loading-bar-container"><div id="loading-bar"></div></div>
 
     <div id="tracker" class="page active">
@@ -156,7 +211,7 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbw1trGVNGdpN82dYaOHxWtgJj0GnkMhVKSUCv4EbLbcM4Vsu_8O4LZZZkm6dIulMYUtyg/exec';
+        const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbyLgZ7EIaQ2nNlrBhFH7MjoAPv73qvkWvjSFkRhRtJUPNXpovIHc5hNbZTPEgQp7LMtgg/exec';
         const MISSING_NO_URL = "https://www.pngkey.com/png/full/343-3434526_missingno-missingno-sprite.png";
         let pokemonMap = {};
 
@@ -204,6 +259,66 @@
 
         function superClean(str) { 
             return String(str).toLowerCase().trim().replace(/[\s\t\n\r]/g, ''); 
+        }
+
+        // New: Search function for links
+        let searchTimeout = null;
+
+        function handleSearch(query) {
+            clearTimeout(searchTimeout);
+            const trimmed = query.trim();
+        
+            if (trimmed.length < 2) {
+                // Falls das Suchfeld geleert wird, zurück zum aktiven Tab wechseln
+                const activeNavBtn = document.querySelector('nav button.active');
+                if (activeNavBtn) activeNavBtn.click();
+                return;
+            }
+        
+            // Automatisch zum Suchergebnisse-Tab wechseln
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('search-results-page').classList.add('active');
+        
+            document.getElementById('search-results-list').innerHTML = "<p>Suche Pokémon in allen Generationen...</p>";
+        
+            // Debounce: 400ms warten, bevor die Anfrage an Google geschickt wird
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}?search=${encodeURIComponent(trimmed)}`);
+                    if (!response.ok) throw new Error("Fehler bei der Suche");
+                    
+                    const json = await response.json();
+                    renderSearchResults(json.results || []);
+                } catch (e) {
+                    console.error("Such-Fehler:", e);
+                    document.getElementById('search-results-list').innerHTML = "<p style='color:red;'>Fehler beim Suchen.</p>";
+                }
+            }, 400);
+        }
+        
+        function renderSearchResults(results) {
+            const container = document.getElementById('search-results-list');
+            if (results.length === 0) {
+                container.innerHTML = "<p>Keine Treffer in allen Generationen gefunden.</p>";
+                return;
+            }
+        
+            container.innerHTML = results.map(item => `
+                <div class="search-card">
+                    <div class="search-card-header">
+                        <span>📍 ${item.gen}</span>
+                        <span>🗺️ ${item.route}</span>
+                    </div>
+                    <div class="search-card-pair">
+                        <span><span class="user-tag riirex">Riirex:</span> ${item.p1 || '—'}</span>
+                        <span>🔗</span>
+                        <span><span class="user-tag zepho">Zepho:</span> ${item.p2 || '—'}</span>
+                    </div>
+                    <span class="status-badge ${item.alive ? 'status-alive' : 'status-dead'}">
+                        ${item.alive ? '🟢 Lebend / Aktiv' : '💀 Gefallen / Friedhof'}
+                    </span>
+                </div>
+            `).join('');
         }
 
         function handleImgError(imgElement, enName) {
