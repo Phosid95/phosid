@@ -214,10 +214,16 @@
     <script>
         const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbwAA08_eDpCsGGwtmnoCsnKvXQ8Q14Ge-7mZptQtFIqraOtlNN-k5Z5BSzrVZ8KZH5HHg/exec';
         const MISSING_NO_URL = "https://www.pngkey.com/png/full/343-3434526_missingno-missingno-sprite.png";
-        let pokemonMap = {};
+        
+        let teamHtml = ""; 
+        let graveHtml = ""; 
+        let teamDataForRadar = []; 
+        let typeCounts = {};
         
         // Central Data Store
         let globalData = null; // Hält die komplette Datenbank (alle Gens + Stats)
+        let pokemonMap = {};
+        let isMapReady = false;
 
         // Neue Search Engine
         let globalPokemonCache = null;
@@ -377,27 +383,6 @@
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
             throw new Error("Fehler beim Abrufen der Daten");
-        }
-        
-        // Optimierte loadAllData-Funktion
-        async function loadAllData() {
-            try {
-                const json = await fetchWithRetry(`${API_BASE_URL}?fetchAll=true`);
-                if (json && json.allData) {
-                    globalData = json;
-                    
-                    // Rendert die Teampaare, den Friedhof UND das Schwächen-Radar
-                    renderCurrentPage();
-        
-                    // Rendert die Stats (Death Counter & Wipeouts)
-                    if (globalData.stats) {
-                        renderBarUI('death-bars', globalData.stats.deaths);
-                        renderBarUI('wipeout-bars', globalData.stats.wipeouts);
-                    }
-                }
-            } catch (e) {
-                console.error("Sync-Fehler:", e);
-            }
         }
 
         function renderBarUI(containerId, statsData) {
@@ -662,11 +647,6 @@
                     if (pairs[0][col]) pNames.push(pairs[0][col]);
                 }
         
-                let teamHtml = ""; 
-                let graveHtml = ""; 
-                let teamDataForRadar = []; 
-                let typeCounts = {};
-        
                 for (let i = 1; i < pairs.length; i++) {
                     const row = pairs[i]; 
                     if (!row[1] && !row[2]) continue; // Leere Routen/Zeilen ausblenden
@@ -751,36 +731,51 @@
             }
         }
 
-        async function init() {
+        async function loadAllData() {
             try {
-                // Parallel abrufen: Typen-JSON + Google Apps Script Daten gleichzeitig
-                const [typesResponse] = await Promise.all([
-                    fetch('pokemon_with_types.json?v=1.0').then(r => r.json()),
-                    loadAllData() // Startet loadAllData sofort
-                ]);
+                const res = await fetch(`${API_BASE_URL}?fetchAll=true`);
+                if (!res.ok) throw new Error("Fehler beim Abrufen der Daten");
+                
+                const json = await res.json();
+                globalData = json;
         
-                // PokemonMap befüllen
-                const m = typesResponse.pokemon || typesResponse;
-                for (let k in m) {
-                    pokemonMap[superClean(k)] = m[k];
-                }
-        
-                // Einmaliges Neu-Rendern, sobald die Typen-Map garantiert im RAM liegt
-                if (globalData) {
+                // Rendert NUR, wenn die pokemonMap auch wirklich schon befüllt ist!
+                if (isMapReady) {
                     renderCurrentPage();
-                    if (globalData.stats) {
+                    if (globalData.stats && typeof renderBarUI === 'function') {
                         renderBarUI('death-bars', globalData.stats.deaths);
                         renderBarUI('wipeout-bars', globalData.stats.wipeouts);
                     }
                 }
-        
-                // Alle 60 Sekunden leise im Hintergrund aktualisieren
-                setInterval(loadAllData, 60000);
-        
-            } catch (e) { 
-                console.error("Init-Fehler:", e); 
+            } catch (e) {
+                console.error("Sync-Fehler:", e);
             }
         }
+
+        async function init() {
+            try {
+                // SCHRITT 1: Zuerst zwingend die Typen-JSON laden & pokemonMap befüllen
+                const r = await fetch('pokemon_with_types.json?v=1.0');
+                const d = await r.json();
+                const m = d.pokemon || d;
+                for (let k in m) {
+                    pokemonMap[superClean(k)] = m[k];
+                }
+                
+                // Typen-Map ist jetzt zu 100% einsatzbereit im RAM!
+                isMapReady = true;
+        
+                // SCHRITT 2: Jetzt erst die Google-Daten laden und rendern
+                await loadAllData();
+        
+                // SCHRITT 3: Hintergrund-Sync starten
+                setInterval(loadAllData, 60000);
+        
+            } catch (e) {
+                console.error("Init-Fehler:", e);
+            }
+        }
+        
         init();
     </script>
 </body>
