@@ -155,17 +155,19 @@
 
                         slots += `
                             <div class="slot">
-                                <div class="user-tag">${pNames[p]}</div>
-                                <a href="https://www.pokewiki.de/${rawName.replace(/\s+/g, '-')}" target="_blank">
-                                    <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${img}.gif" class="poke-sprite" onerror="handleImgError(this, '${img}')">
+                                <div class="user-tag">\${pNames[p]}</div>
+                                <a href="https://pokewiki.de\${rawName.replace(/\s+/g, '-')}" target="_blank">
+                                    <img src="https://pokemondb.net\({img}.gif" class="poke-sprite" onerror="handleImgError(this, '\){img}')">
                                 </a>
-                                <div class="name">${rawName}</div>
-                                <div class="type-container">${getTypeIconsHTML(info.type)}</div>
+                                <div class="name">\${rawName}</div>
+                                <div class="type-container">\${getTypeIconsHTML(info.type)}</div>
                             </div>
-                            \${p < pNames.length - 1 ? '<div class="link-icon">🔗</div>' : ''}`;
+                            \${p < pNames.length - 1 ? '<div class="link-icon">🔗</div>' : ''}`; // Backtick am Ende!
                     }
 
-                    const html = `<div class="card \${alive ? '' : 'dead-card'}"><div class="route-header">\${row[0]}</div><div class="card-content"><div class="pair">\${slots}</div></div></div>`;
+                    // WICHTIG: Auch hier müssen am Anfang und Ende Backticks ` genutzt werden!
+                    const html = `<div class="card ${alive ? '' : 'dead-card'}"><div class="route-header">${row[0]}</div><div class="card-content"><div class="pair">${slots}</div></div></div>`;
+                    
                     if(alive) teamHtml += html; else graveHtml += html;
                 }
 
