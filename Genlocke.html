@@ -264,43 +264,61 @@
 
         // New: Search function for links
         let searchTimeout = null;
+        let globalPokemonCache = null;
         
-        function handleSearch(query) {
-            clearTimeout(searchTimeout);
-            const trimmed = query.trim();
+        async function handleSearch(query) {
+            const trimmed = query.trim().toLowerCase();
         
+            // Bei weniger als 2 Zeichen Suchergebnisse ausblenden
             if (trimmed.length < 2) {
                 document.getElementById('search-results-page').style.display = 'none';
                 return;
             }
         
             document.getElementById('search-results-page').style.display = 'block';
-            document.getElementById('search-results-list').innerHTML = "<p>Suche läuft...</p>";
         
-            searchTimeout = setTimeout(async () => {
-                try {
-                    const res = await fetch(`${API_BASE_URL}?search=${encodeURIComponent(trimmed)}`);
-                    if (!res.ok) throw new Error("Suchanfrage fehlgeschlagen");
-                    const json = await res.json();
-                    
-                    const list = document.getElementById('search-results-list');
-                    if (!json.results || json.results.length === 0) {
-                        list.innerHTML = "<p>Keine Pokémon gefunden.</p>";
-                        return;
-                    }
+            // 1. Daten aus dem Cache holen (lädt beim allerersten Mal kurz nach)
+            const allData = await preloadAllGens();
         
-                    list.innerHTML = json.results.map(item => `
-                        <div style="background:#222; padding:10px; margin:5px 0; border-radius:8px;">
-                            <strong>${item.gen}</strong> (${item.route}): 
-                            <span>Riirex: ${item.p1 || '—'}</span> | 
-                            <span>Zepho: ${item.p2 || '—'}</span> 
-                            (${item.alive ? '🟢 Lebend' : '💀 Gefallen'})
-                        </div>
-                    `).join('');
-                } catch (e) {
-                    console.error("Fehler bei der Suche:", e);
-                }
-            }, 400);
+            // 2. Sofort im Arbeitsspeicher filtern (Laufzeit < 5ms)
+            const filteredResults = allData.filter(item => {
+                const p1Match = item.p1 && item.p1.toLowerCase().includes(trimmed);
+                const p2Match = item.p2 && item.p2.toLowerCase().includes(trimmed);
+                return p1Match || p2Match;
+            });
+        
+            // 3. Ergebnisse rendern
+            const list = document.getElementById('search-results-list');
+            
+            if (filteredResults.length === 0) {
+                list.innerHTML = "<p>Keine Pokémon gefunden.</p>";
+                return;
+            }
+        
+            list.innerHTML = filteredResults.map(item => `
+                <div style="background:#222; padding:10px; margin:5px 0; border-radius:8px;">
+                    <strong>${item.gen}</strong> (${item.route}): 
+                    <span>Riirex: ${item.p1 || '—'}</span> | 
+                    <span>Zepho: ${item.p2 || '—'}</span> 
+                    (${item.alive ? '🟢 Lebend' : '💀 Gefallen'})
+                </div>
+            `).join('');
+        }
+
+        // Lade alle Generationen einmalig beim ersten Laden/Suchen
+        async function preloadAllGens() {
+            if (globalPokemonCache) return globalPokemonCache; // Bereit aus dem Cache
+        
+            try {
+                const response = await fetch(`${API_BASE_URL}?fetchAll=true`);
+                if (!response.ok) throw new Error("Fehler beim Preload");
+                const json = await response.json();
+                globalPokemonCache = json.allData || [];
+                return globalPokemonCache;
+            } catch (e) {
+                console.error("Cache-Ladefehler:", e);
+                return [];
+            }
         }
         
         function renderSearchResults(results) {
@@ -416,138 +434,139 @@
         }
 
         async function update() {
-        const bar = document.getElementById('loading-bar');
-        if (bar) bar.style.width = "30%";
-        
-        const currentGen = getSelectedGen();
-        const genSelect = document.getElementById('gen-select');
-        if (genSelect) genSelect.value = currentGen;
-        
-        const pageTitle = document.getElementById('page-title');
-        if (pageTitle) pageTitle.innerText = `Aktive Links (${currentGen})`;
-    
-        try {
-            const fetchUrl = `${API_BASE_URL}?sheet=${currentGen}`;
-            const response = await fetch(fetchUrl);
-    
-            // 1. Prüfen, ob der Server mit Status 200 OK antwortet (fängt 404/500 ab)
-            if (!response.ok) {
-                throw new Error(`Server antwortete mit Status: ${response.status}`);
-            }
-    
-            // 2. Prüfen, ob der Server wirklich JSON zurückgibt (verhindert <!DOCTYPE SyntaxError)
-            const contentType = response.headers.get("content-type");
-            if (!contentType || !contentType.includes("application/json")) {
-                throw new Error("Antwort ist kein gültiges JSON! Möglicherweise eine HTML-Fehlerseite.");
-            }
-    
-            const json = await response.json();
-            if (bar) bar.style.width = "70%";
+            const bar = document.getElementById('loading-bar');
+            if (bar) bar.style.width = "30%";
+            globalPokemonCache = null;
             
-            const pairs = json.pairs || [];
-            if (pairs.length === 0) {
-                document.getElementById('dashboard').innerHTML = "<p>Keine Daten für diese Generation gefunden.</p>";
+            const currentGen = getSelectedGen();
+            const genSelect = document.getElementById('gen-select');
+            if (genSelect) genSelect.value = currentGen;
+            
+            const pageTitle = document.getElementById('page-title');
+            if (pageTitle) pageTitle.innerText = `Aktive Links (${currentGen})`;
+        
+            try {
+                const fetchUrl = `${API_BASE_URL}?sheet=${currentGen}`;
+                const response = await fetch(fetchUrl);
+        
+                // 1. Prüfen, ob der Server mit Status 200 OK antwortet (fängt 404/500 ab)
+                if (!response.ok) {
+                    throw new Error(`Server antwortete mit Status: ${response.status}`);
+                }
+        
+                // 2. Prüfen, ob der Server wirklich JSON zurückgibt (verhindert <!DOCTYPE SyntaxError)
+                const contentType = response.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    throw new Error("Antwort ist kein gültiges JSON! Möglicherweise eine HTML-Fehlerseite.");
+                }
+        
+                const json = await response.json();
+                if (bar) bar.style.width = "70%";
+                
+                const pairs = json.pairs || [];
+                if (pairs.length === 0) {
+                    document.getElementById('dashboard').innerHTML = "<p>Keine Daten für diese Generation gefunden.</p>";
+                    if (bar) {
+                        bar.style.width = "100%";
+                        setTimeout(() => bar.style.width = "0%", 1000);
+                    }
+                    return;
+                }
+        
+                const statusIdx = pairs[0].findIndex(c => String(c).toUpperCase().includes("GÜLTIG"));
+                const pNames = [];
+                for (let col = 1; col < statusIdx; col++) {
+                    if (pairs[0][col]) pNames.push(pairs[0][col]);
+                }
+        
+                let teamHtml = ""; 
+                let graveHtml = ""; 
+                let teamDataForRadar = []; 
+                let typeCounts = {};
+        
+                for (let i = 1; i < pairs.length; i++) {
+                    const row = pairs[i]; 
+                    if (!row[1] && !row[2]) continue; // Leere Routen/Zeilen ausblenden
+        
+                    const alive = (row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE');
+                    let slots = "";
+        
+                    for (let p = 0; p < pNames.length; p++) {
+                        const rawName = String(row[p + 1] || '').trim();
+                        if (!rawName) continue;
+        
+                        const info = pokemonMap[superClean(rawName)] || { en: rawName, type: "???" };
+                        const img = info.en.toLowerCase()
+                                           .replace(/\. /g, '-')     
+                                           .replace(/\s+/g, '-')     
+                                           .replace(/\./g, '')        
+                                           .replace(/['’´`‘]/g, '')   
+                                           .replace('♀', '-f')
+                                           .replace('♂', '-m');
+                        
+                        if (alive && info.type !== "???") {
+                            teamDataForRadar.push({ name: rawName, typeString: info.type });
+                            info.type.split(/[\s/]+/).forEach(t => { 
+                                let ct = superClean(t); 
+                                if (ct === 'käfer' || ct === 'kaefer') ct = 'kaefer';
+                                typeCounts[ct] = (typeCounts[ct] || 0) + 1; 
+                            });
+                        }
+        
+                        const userClass = pNames[p].toLowerCase().includes('riirex') ? 'riirex' : 'zepho';
+        
+                        slots += `
+                            <div class="slot">
+                                <div class="user-tag ${userClass}">${pNames[p]}</div>
+                                <a href="https://www.pokewiki.de/${rawName.replace(/\s+/g, '-')}" target="_blank" class="poke-link">
+                                    <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${img}.gif" class="poke-sprite" onerror="handleImgError(this, '${img}')">
+                                </a>
+                                <div class="name">${rawName}</div>
+                                <div class="type-container">${getTypeIconsHTML(info.type)}</div>
+                            </div>
+                            ${p < pNames.length - 1 ? '<div class="link-icon">🔗</div>' : ''}`;
+                    }
+        
+                    if (slots === "") continue; // Falls beide Pokémon auf der Route leer sind
+        
+                    const html = `<div class="card ${alive ? '' : 'dead-card'}"><div class="route-header">${row[0]}</div><div class="card-content"><div class="pair">${slots}</div></div></div>`;
+                    if (alive) teamHtml += html; else graveHtml += html;
+                }
+        
+                document.getElementById('dashboard').innerHTML = teamHtml || "<p>Keine aktiven Pokémon in dieser Generation.</p>";
+                document.getElementById('graveyard-list').innerHTML = graveHtml || "<p>Keine Verluste in dieser Generation.</p>";
+                document.getElementById('last-update').innerText = "Sync (" + currentGen + "): " + new Date().toLocaleTimeString();
+                
+                calculateRadar(teamDataForRadar);
+                
+                const sortedTypes = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+                document.getElementById('type-distribution').innerHTML = sortedTypes.map(e => `<div class="type-stat-card" style="border-left-color: ${typeColors[e[0]] || '#555'}"><img src="types/${e[0]}.png" class="type-icon"> <b style="color:${typeColors[e[0]]}">${e[1]}x</b></div>`).join('') || "Keine Daten.";
+                
+                const renderBarUI = (id, data) => {
+                    if (!data || data.length < 2) return;
+                    const stats = data.slice(1);
+                    const total = stats.reduce((a, b) => a + (parseInt(b[1]) || 0), 0);
+                    document.getElementById(id).innerHTML = stats.map(r => {
+                        const isRiirex = r[0].toLowerCase().includes('riirex');
+                        return `<div class="stat-row"><div class="stat-label"><span>${r[0]}</span><span>${r[1]}</span></div><div class="bar-bg"><div class="bar-fill ${isRiirex ? 'riirex-bar' : 'zepho-bar'}" style="width:${total ? (r[1] / total * 100) : 0}%"></div></div></div>`;
+                    }).join('');
+                };
+        
+                if (json.stats) {
+                    renderBarUI('death-bars', json.stats.deaths);
+                    renderBarUI('wipeout-bars', json.stats.wipeouts);
+                }
+        
                 if (bar) {
                     bar.style.width = "100%";
+                    bar.style.backgroundColor = ""; // Farbe zurücksetzen im Erfolgsfall
                     setTimeout(() => bar.style.width = "0%", 1000);
                 }
-                return;
+            } catch (e) { 
+                console.error("Sync-Fehler abgefangen:", e); 
+                if (bar) bar.style.backgroundColor = "orange"; // Signalisiert einen sanften Sync-Fehler
             }
-    
-            const statusIdx = pairs[0].findIndex(c => String(c).toUpperCase().includes("GÜLTIG"));
-            const pNames = [];
-            for (let col = 1; col < statusIdx; col++) {
-                if (pairs[0][col]) pNames.push(pairs[0][col]);
-            }
-    
-            let teamHtml = ""; 
-            let graveHtml = ""; 
-            let teamDataForRadar = []; 
-            let typeCounts = {};
-    
-            for (let i = 1; i < pairs.length; i++) {
-                const row = pairs[i]; 
-                if (!row[1] && !row[2]) continue; // Leere Routen/Zeilen ausblenden
-    
-                const alive = (row[statusIdx] === true || String(row[statusIdx]).toUpperCase() === 'TRUE');
-                let slots = "";
-    
-                for (let p = 0; p < pNames.length; p++) {
-                    const rawName = String(row[p + 1] || '').trim();
-                    if (!rawName) continue;
-    
-                    const info = pokemonMap[superClean(rawName)] || { en: rawName, type: "???" };
-                    const img = info.en.toLowerCase()
-                                       .replace(/\. /g, '-')     
-                                       .replace(/\s+/g, '-')     
-                                       .replace(/\./g, '')        
-                                       .replace(/['’´`‘]/g, '')   
-                                       .replace('♀', '-f')
-                                       .replace('♂', '-m');
-                    
-                    if (alive && info.type !== "???") {
-                        teamDataForRadar.push({ name: rawName, typeString: info.type });
-                        info.type.split(/[\s/]+/).forEach(t => { 
-                            let ct = superClean(t); 
-                            if (ct === 'käfer' || ct === 'kaefer') ct = 'kaefer';
-                            typeCounts[ct] = (typeCounts[ct] || 0) + 1; 
-                        });
-                    }
-    
-                    const userClass = pNames[p].toLowerCase().includes('riirex') ? 'riirex' : 'zepho';
-    
-                    slots += `
-                        <div class="slot">
-                            <div class="user-tag ${userClass}">${pNames[p]}</div>
-                            <a href="https://www.pokewiki.de/${rawName.replace(/\s+/g, '-')}" target="_blank" class="poke-link">
-                                <img src="https://img.pokemondb.net/sprites/black-white/anim/normal/${img}.gif" class="poke-sprite" onerror="handleImgError(this, '${img}')">
-                            </a>
-                            <div class="name">${rawName}</div>
-                            <div class="type-container">${getTypeIconsHTML(info.type)}</div>
-                        </div>
-                        ${p < pNames.length - 1 ? '<div class="link-icon">🔗</div>' : ''}`;
-                }
-    
-                if (slots === "") continue; // Falls beide Pokémon auf der Route leer sind
-    
-                const html = `<div class="card ${alive ? '' : 'dead-card'}"><div class="route-header">${row[0]}</div><div class="card-content"><div class="pair">${slots}</div></div></div>`;
-                if (alive) teamHtml += html; else graveHtml += html;
-            }
-    
-            document.getElementById('dashboard').innerHTML = teamHtml || "<p>Keine aktiven Pokémon in dieser Generation.</p>";
-            document.getElementById('graveyard-list').innerHTML = graveHtml || "<p>Keine Verluste in dieser Generation.</p>";
-            document.getElementById('last-update').innerText = "Sync (" + currentGen + "): " + new Date().toLocaleTimeString();
-            
-            calculateRadar(teamDataForRadar);
-            
-            const sortedTypes = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
-            document.getElementById('type-distribution').innerHTML = sortedTypes.map(e => `<div class="type-stat-card" style="border-left-color: ${typeColors[e[0]] || '#555'}"><img src="types/${e[0]}.png" class="type-icon"> <b style="color:${typeColors[e[0]]}">${e[1]}x</b></div>`).join('') || "Keine Daten.";
-            
-            const renderBarUI = (id, data) => {
-                if (!data || data.length < 2) return;
-                const stats = data.slice(1);
-                const total = stats.reduce((a, b) => a + (parseInt(b[1]) || 0), 0);
-                document.getElementById(id).innerHTML = stats.map(r => {
-                    const isRiirex = r[0].toLowerCase().includes('riirex');
-                    return `<div class="stat-row"><div class="stat-label"><span>${r[0]}</span><span>${r[1]}</span></div><div class="bar-bg"><div class="bar-fill ${isRiirex ? 'riirex-bar' : 'zepho-bar'}" style="width:${total ? (r[1] / total * 100) : 0}%"></div></div></div>`;
-                }).join('');
-            };
-    
-            if (json.stats) {
-                renderBarUI('death-bars', json.stats.deaths);
-                renderBarUI('wipeout-bars', json.stats.wipeouts);
-            }
-    
-            if (bar) {
-                bar.style.width = "100%";
-                bar.style.backgroundColor = ""; // Farbe zurücksetzen im Erfolgsfall
-                setTimeout(() => bar.style.width = "0%", 1000);
-            }
-        } catch (e) { 
-            console.error("Sync-Fehler abgefangen:", e); 
-            if (bar) bar.style.backgroundColor = "orange"; // Signalisiert einen sanften Sync-Fehler
         }
-    }
 
         async function init() {
             try {
