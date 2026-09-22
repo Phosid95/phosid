@@ -406,7 +406,7 @@
                 const m = d.pokemon || d;
                 for (let k in m) pokemonMap[superClean(k)] = m[k];
                 await update(); 
-                setInterval(update, 30000);
+                setInterval(update, 60000);
             } catch (e) { console.error(e); }
         }
         init();
