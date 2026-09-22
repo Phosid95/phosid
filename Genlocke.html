@@ -212,7 +212,7 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbyLgZ7EIaQ2nNlrBhFH7MjoAPv73qvkWvjSFkRhRtJUPNXpovIHc5hNbZTPEgQp7LMtgg/exec';
+        const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzY_KSCaPQgOz1jOb3-glykSz-ybemXvzIqWfQmrlrXm7prNWD02IzomOaTtNqnLtln0w/exec';
         const MISSING_NO_URL = "https://www.pngkey.com/png/full/343-3434526_missingno-missingno-sprite.png";
         let pokemonMap = {};
 
@@ -266,43 +266,61 @@
         let searchTimeout = null;
         let globalPokemonCache = null;
         
-        async function handleSearch(query) {
+        function handleSearch(query) {
+            clearTimeout(searchTimeout);
             const trimmed = query.trim().toLowerCase();
         
-            // Bei weniger als 2 Zeichen Suchergebnisse ausblenden
+            const searchPage = document.getElementById('search-results-page');
+            const mainDashboard = document.getElementById('dashboard');
+            const pageTitle = document.getElementById('page-title');
+        
             if (trimmed.length < 2) {
-                document.getElementById('search-results-page').style.display = 'none';
+                if (searchPage) searchPage.style.display = 'none';
+                if (mainDashboard) mainDashboard.style.display = 'grid';
+                if (pageTitle) pageTitle.style.display = 'block';
                 return;
             }
         
-            document.getElementById('search-results-page').style.display = 'block';
+            // Hauptinhalte verbergen, wenn Ergebnisse angezeigt werden
+            if (searchPage) searchPage.style.display = 'block';
+            if (mainDashboard) mainDashboard.style.display = 'none';
+            if (pageTitle) pageTitle.style.display = 'none';
         
-            // 1. Daten aus dem Cache holen (lädt beim allerersten Mal kurz nach)
-            const allData = await preloadAllGens();
+            document.getElementById('search-results-list').innerHTML = "<p>Suche in allen Generationen läuft...</p>";
         
-            // 2. Sofort im Arbeitsspeicher filtern (Laufzeit < 5ms)
-            const filteredResults = allData.filter(item => {
-                const p1Match = item.p1 && item.p1.toLowerCase().includes(trimmed);
-                const p2Match = item.p2 && item.p2.toLowerCase().includes(trimmed);
-                return p1Match || p2Match;
-            });
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch(`${API_BASE_URL}?search=${encodeURIComponent(trimmed)}`);
+                    if (!res.ok) throw new Error("Fehler bei der Suchanfrage");
+                    const json = await res.json();
+                    
+                    const list = document.getElementById('search-results-list');
+                    if (!json.results || json.results.length === 0) {
+                        list.innerHTML = "<p>Keine Pokémon gefunden.</p>";
+                        return;
+                    }
         
-            // 3. Ergebnisse rendern
-            const list = document.getElementById('search-results-list');
-            
-            if (filteredResults.length === 0) {
-                list.innerHTML = "<p>Keine Pokémon gefunden.</p>";
-                return;
-            }
-        
-            list.innerHTML = filteredResults.map(item => `
-                <div style="background:#222; padding:10px; margin:5px 0; border-radius:8px;">
-                    <strong>${item.gen}</strong> (${item.route}): 
-                    <span>Riirex: ${item.p1 || '—'}</span> | 
-                    <span>Zepho: ${item.p2 || '—'}</span> 
-                    (${item.alive ? '🟢 Lebend' : '💀 Gefallen'})
-                </div>
-            `).join('');
+                    list.innerHTML = json.results.map(item => `
+                        <div style="background:#222; border:1px solid #444; padding:12px; margin:8px 0; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <span style="color:#ffd700; font-weight:bold;">[${item.gen}]</span> 
+                                <span style="color:#aaa;">${item.route}</span>
+                                <div style="margin-top:5px; font-size:1.1em;">
+                                    <span style="color:#5c9cff; font-weight:bold;">Riirex:</span> ${item.p1 || '—'} 🔗 
+                                    <span style="color:#ff69b4; font-weight:bold;">Zepho:</span> ${item.p2 || '—'}
+                                </div>
+                            </div>
+                            <div>
+                                ${item.alive ? '<span style="color:#28a745; background:rgba(40,167,69,0.2); padding:4px 8px; border-radius:4px;">🟢 Lebend</span>' 
+                                             : '<span style="color:#dc3545; background:rgba(220,53,69,0.2); padding:4px 8px; border-radius:4px;">💀 Gefallen</span>'}
+                            </div>
+                        </div>
+                    `).join('');
+                } catch (e) {
+                    console.error("Such-Fehler:", e);
+                    document.getElementById('search-results-list').innerHTML = "<p style='color:orange;'>Suchanfrage fehlgeschlagen. Bitte erneut tippen.</p>";
+                }
+            }, 300);
         }
 
         // Lade alle Generationen einmalig beim ersten Laden/Suchen
