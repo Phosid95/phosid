@@ -239,6 +239,24 @@
 
         const typeColors = { normal: "#A8A77A", feuer: "#EE8130", wasser: "#6390F0", elektro: "#F7D02C", pflanze: "#7AC74C", eis: "#96D9D6", kampf: "#C22E28", gift: "#A33EA1", boden: "#E2BF65", flug: "#A98FF3", psycho: "#F95587", kaefer: "#A6B91A", gestein: "#B6A136", geist: "#735797", drache: "#6F35FC", unlicht: "#705746", stahl: "#B7B7CE", fee: "#D685AD" };
 
+        // Hilfsfunktion zum Abrufen von Sprite-URL & Typen-Info
+        function getPokemonDetails(rawName) {
+            if (!rawName) return { name: '—', sprite: '', type: '???' };
+            
+            const cleanKey = superClean(rawName);
+            const info = pokemonMap[cleanKey] || {};
+        
+            // Falls du lokale Sprites oder Showdown/PokeAPI Sprites nutzt:
+            // Passe 'sprite' an deinen tatsächlichen Pfad an (z.B. info.sprite oder PokeAPI URL)
+            const spriteUrl = info.sprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${info.id || 0}.gif`;
+        
+            return {
+                name: rawName,
+                sprite: spriteUrl,
+                type: info.type || '???'
+            };
+        }
+        
         function getSelectedGen() {
             const params = new URLSearchParams(window.location.search);
             return params.get('sheet') || 'Gen1';
@@ -319,36 +337,37 @@
             let teamDataForRadar = [];
             let typeCounts = {};
         
+            // In deiner renderCurrentPage() Schleife:
             currentGenPairs.forEach(row => {
-                // Logik für Team-Cards & Friedhof aus deinen Daten...
-                const p1Info = pokemonMap[superClean(row.p1)] || { en: row.p1, type: "???" };
-                const p2Info = pokemonMap[superClean(row.p2)] || { en: row.p2, type: "???" };
-        
-                if (row.alive) {
-                    if (p1Info.type !== "???") teamDataForRadar.push({ name: row.p1, typeString: p1Info.type });
-                    if (p2Info.type !== "???") teamDataForRadar.push({ name: row.p2, typeString: p2Info.type });
-                }
-        
+                const p1 = getPokemonDetails(row.p1);
+                const p2 = getPokemonDetails(row.p2);
+            
                 const html = `
                     <div class="card ${row.alive ? '' : 'dead-card'}">
                         <div class="route-header">${row.route}</div>
                         <div class="card-content">
                             <div class="pair">
+                                <!-- Linkes Pokémon (Riirex) -->
                                 <div class="slot">
                                     <div class="user-tag riirex">Riirex</div>
-                                    <div class="name">${row.p1 || '—'}</div>
-                                    <div class="type-container">${getTypeIconsHTML(p1Info.type)}</div>
+                                    ${p1.sprite ? `<img src="${p1.sprite}" class="pokemon-sprite" alt="${p1.name}">` : ''}
+                                    <div class="name">${p1.name}</div>
+                                    <div class="type-container">${getTypeIconsHTML(p1.type)}</div>
                                 </div>
+            
                                 <div class="link-icon">🔗</div>
+            
+                                <!-- Rechtes Pokémon (Zepho) -->
                                 <div class="slot">
                                     <div class="user-tag zepho">Zepho</div>
-                                    <div class="name">${row.p2 || '—'}</div>
-                                    <div class="type-container">${getTypeIconsHTML(p2Info.type)}</div>
+                                    ${p2.sprite ? `<img src="${p2.sprite}" class="pokemon-sprite" alt="${p2.name}">` : ''}
+                                    <div class="name">${p2.name}</div>
+                                    <div class="type-container">${getTypeIconsHTML(p2.type)}</div>
                                 </div>
                             </div>
                         </div>
                     </div>`;
-        
+            
                 if (row.alive) teamHtml += html; else graveHtml += html;
             });
         
