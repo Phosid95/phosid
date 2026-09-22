@@ -273,21 +273,31 @@
         
         // Hilfsfunktion zur Ermittlung des Sprite-HTMLs
         function getPokemonSpriteHTML(rawName) {
-            if (!rawName) return `<img src="${MISSING_NO_URL}" class="pokemon-sprite" alt="Unbekannt">`;
+            if (!rawName) {
+                return `<img src="${MISSING_NO_URL}" class="pokemon-sprite" alt="Unbekannt">`;
+            }
         
             const cleanKey = superClean(rawName);
             const info = pokemonMap[cleanKey] || {};
         
-            // Priorität 1: Bereits vorhandene Sprite-URL aus eurer JSON
-            if (info.sprite) {
-                return `<img src="${info.sprite}" class="pokemon-sprite" alt="${rawName}" onerror="handleImgError(this, '${info.en || rawName}')">`;
-            }
+            // Englischer Name für Sprite-Pfade
+            const enName = info.en || rawName;
+            const cleanEn = enName.toLowerCase()
+                .replace(/♀/g, '-f')
+                .replace(/♂/g, '-m')
+                .replace(/[^a-z0-9-]/g, '');
         
-            // Priorität 2: Englischer Name für Showdown GIFs
-            const enName = (info.en || rawName).toLowerCase().replace(/[^a-z0-9]/g, '');
-            const showdownUrl = `https://play.pokemonshowdown.com/sprites/gen5/${enName}.png`;
+            // Wiki-Name für den PokéWiki Link (z.B. "Bisaflor")
+            const wikiName = encodeURIComponent(rawName.trim().replace(/\s+/g, '_'));
         
-            return `<img src="${showdownUrl}" class="pokemon-sprite" alt="${rawName}" onerror="handleImgError(this, '${enName}')">`;
+            // Startet mit dem animierten Gen 5 Sprite von PokemonDB
+            const animUrl = `https://img.pokemondb.net/sprites/black-white/anim/normal/${cleanEn}.gif`;
+        
+            return `
+                <a href="https://www.pokewiki.de/${wikiName}" target="_blank" class="poke-link" title="${rawName}">
+                    <img src="${animUrl}" class="pokemon-sprite" alt="${rawName}" onerror="handleImgError(this, '${cleanEn}')">
+                </a>
+            `;
         }
         
         // Hilfsfunktion zum Abrufen von Sprite-URL & Typen-Info
