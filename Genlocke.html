@@ -541,6 +541,33 @@
         function calculateRadar(teamData) {
             let weak = {}; let superWeak = {}; let res = {}; let imm = {}; 
             let sources = { weak: {}, superWeak: {}, res: {}, imm: {} };
+            let teamDataForRadar = [];
+
+            currentGenPairs.forEach(row => {
+                    if (row.alive) {
+                        const p1Info = pokemonMap[superClean(row.p1)] || {};
+                        const p2Info = pokemonMap[superClean(row.p2)] || {};
+                
+                        // p1Info.type enthält z.B. "Feuer / Flug" oder "Wasser"
+                        if (row.p1 && p1Info.type) {
+                            teamDataForRadar.push({ 
+                                name: row.p1, 
+                                typeString: String(p1Info.type) 
+                            });
+                        }
+                        if (row.p2 && p2Info.type) {
+                            teamDataForRadar.push({ 
+                                name: row.p2, 
+                                typeString: String(p2Info.type) 
+                            });
+                        }
+                    }
+                });
+                
+                // Jetzt die calculateRadar mit den aufbereiteten Daten aufrufen:
+                if (typeof calculateRadar === 'function') {
+                    calculateRadar(teamDataForRadar);
+                }
             
             teamData.forEach(p => {
                 const types = p.typeString.split(/[\s/]+/).map(t => {
