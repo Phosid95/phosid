@@ -107,7 +107,7 @@
                 const selectedGen = document.getElementById('gen-select').value;
                 const fetchUrl = `${API_URL}${API_URL.includes('?') ? '&' : '?'}sheet=${selectedGen}`;
                 
-                const response = await fetch(fetchUrl);
+                const response = await fetch(fetchUrl, { method: "GET", redirect: "follow" });
                 const json = await response.json();
                 bar.style.width = "70%";
                 
