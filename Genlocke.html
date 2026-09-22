@@ -371,18 +371,22 @@
             }
         }
 
-        // Robustes Fetching mit automatischem Retry bei 404 / Netzwerkfehlern
-        async function fetchWithRetry(url, retries = 2, delay = 500) {
-            for (let i = 0; i <= retries; i++) {
+        // Robustes Fetching: Versucht die Anfrage bei Fehlern (z.B. Google Cold Start 404) sofort erneut
+        async function fetchWithRetry(url, retries = 3, delay = 600) {
+            for (let i = 0; i < retries; i++) {
                 try {
                     const res = await fetch(url);
-                    if (res.ok) return await res.json();
+                    if (res.ok) {
+                        return await res.json();
+                    }
                 } catch (e) {
-                    if (i === retries) throw e;
+                    // Zeige im Konsolen-Log, dass ein Retry läuft
+                    console.warn(`Verbindungsversuch ${i + 1} fehlgeschlagen. Neuer Versuch in ${delay}ms...`);
                 }
+                // Kurze Pause vor dem nächsten Versuch
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
-            throw new Error("Fehler beim Abrufen der Daten");
+            throw new Error("Google API antwortet auch nach mehreren Versuchen nicht.");
         }
 
         function renderBarUI(containerId, statsData) {
@@ -733,18 +737,20 @@
 
         async function loadAllData() {
             try {
-                const res = await fetch(`${API_BASE_URL}?fetchAll=true`);
-                if (!res.ok) throw new Error("Fehler beim Abrufen der Daten");
+                // Nutzt die neue Retry-Funktion
+                const json = await fetchWithRetry(`${API_BASE_URL}?fetchAll=true`);
                 
-                const json = await res.json();
-                globalData = json;
+                if (json && json.allData) {
+                    globalData = json;
         
-                // Rendert NUR, wenn die pokemonMap auch wirklich schon befüllt ist!
-                if (isMapReady) {
-                    renderCurrentPage();
-                    if (globalData.stats && typeof renderBarUI === 'function') {
-                        renderBarUI('death-bars', globalData.stats.deaths);
-                        renderBarUI('wipeout-bars', globalData.stats.wipeouts);
+                    // Rendert die UI nur, wenn auch die pokemonMap einsatzbereit ist
+                    if (isMapReady) {
+                        renderCurrentPage();
+                        
+                        if (globalData.stats && typeof renderBarUI === 'function') {
+                            renderBarUI('death-bars', globalData.stats.deaths);
+                            renderBarUI('wipeout-bars', globalData.stats.wipeouts);
+                        }
                     }
                 }
             } catch (e) {
@@ -754,7 +760,7 @@
 
         async function init() {
             try {
-                // SCHRITT 1: Zuerst zwingend die Typen-JSON laden & pokemonMap befüllen
+                // 1. Pokémon-Typen-Datenbank laden
                 const r = await fetch('pokemon_with_types.json?v=1.0');
                 const d = await r.json();
                 const m = d.pokemon || d;
@@ -762,13 +768,13 @@
                     pokemonMap[superClean(k)] = m[k];
                 }
                 
-                // Typen-Map ist jetzt zu 100% einsatzbereit im RAM!
+                // Typen-Map ist jetzt bereit!
                 isMapReady = true;
         
-                // SCHRITT 2: Jetzt erst die Google-Daten laden und rendern
+                // 2. Google-Daten abrufen (fängt den initialen 404 automatisch ab)
                 await loadAllData();
         
-                // SCHRITT 3: Hintergrund-Sync starten
+                // 3. Hintergrund-Sync alle 60 Sekunden
                 setInterval(loadAllData, 60000);
         
             } catch (e) {
