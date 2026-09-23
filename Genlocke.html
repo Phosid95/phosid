@@ -156,7 +156,15 @@
         }
         .status-alive { background: rgba(0, 200, 81, 0.2); color: var(--success); border: 1px solid var(--success); }
         .status-dead { background: rgba(255, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
-        
+        .slot img.poke-sprite, 
+        .pokemon-sprite { 
+            width: 70px; 
+            height: 70px; 
+            max-width: 70px;
+            max-height: 70px;
+            object-fit: contain; 
+            margin-bottom: 5px; 
+        }
     </style>
 </head>
 <body>
@@ -288,28 +296,24 @@
         // Hilfsfunktion zur Ermittlung des Sprite-HTMLs
         function getPokemonSpriteHTML(rawName) {
             if (!rawName) {
-                return `<img src="${MISSING_NO_URL}" class="pokemon-sprite" alt="Unbekannt">`;
+                return `<img src="${MISSING_NO_URL}" class="poke-sprite" alt="Unbekannt">`;
             }
         
             const cleanKey = superClean(rawName);
             const info = pokemonMap[cleanKey] || {};
         
-            // Englischer Name für Sprite-Pfade
             const enName = info.en || rawName;
             const cleanEn = enName.toLowerCase()
                 .replace(/♀/g, '-f')
                 .replace(/♂/g, '-m')
                 .replace(/[^a-z0-9-]/g, '');
         
-            // Wiki-Name für den PokéWiki Link (z.B. "Bisaflor")
             const wikiName = encodeURIComponent(rawName.trim().replace(/\s+/g, '_'));
-        
-            // Startet mit dem animierten Gen 5 Sprite von PokemonDB
             const animUrl = `https://img.pokemondb.net/sprites/black-white/anim/normal/${cleanEn}.gif`;
         
             return `
                 <a href="https://www.pokewiki.de/${wikiName}" target="_blank" class="poke-link" title="${rawName}">
-                    <img src="${animUrl}" class="pokemon-sprite" alt="${rawName}" onerror="handleImgError(this, '${cleanEn}')">
+                    <img src="${animUrl}" class="poke-sprite" alt="${rawName}" onerror="handleImgError(this, '${cleanEn}')">
                 </a>
             `;
         }
